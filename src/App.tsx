@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Waves, Wind, Sunrise, Sunset, Moon, Droplets, Gauge, Anchor, Activity, Map, Wrench, Worm, Timer, Target, Leaf, BookOpen } from 'lucide-react'
 import './App.css'
 
@@ -18,6 +18,9 @@ interface FishingSpot {
   name: string
   catches: number
   rating: number
+  distance: number
+  latitude: number
+  longitude: number
 }
 
 interface MarineWeather {
@@ -33,6 +36,7 @@ interface MarineWeather {
 function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'stats' | 'planning' | 'equipment' | 'baits' | 'times' | 'techniques' | 'environment'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
+  const [showTips, setShowTips] = useState(false)
   const [catches, setCatches] = useState<Catch[]>([
     {
       id: 1,
@@ -57,9 +61,9 @@ function App() {
   ])
 
   const [spots] = useState<FishingSpot[]>([
-    { id: 1, name: 'Lagoa da Conceição', catches: 15, rating: 4.5 },
-    { id: 2, name: 'Praia da Armação', catches: 12, rating: 4.2 },
-    { id: 3, name: 'Barra da Lagoa', catches: 8, rating: 4.0 }
+    { id: 1, name: 'Lagoa da Conceição', catches: 15, rating: 4.5, distance: 2.3, latitude: -27.5969, longitude: -48.4519 },
+    { id: 2, name: 'Praia da Armação', catches: 12, rating: 4.2, distance: 5.8, latitude: -27.7461, longitude: -48.5008 },
+    { id: 3, name: 'Barra da Lagoa', catches: 8, rating: 4.0, distance: 8.1, latitude: -27.5742, longitude: -48.4217 }
   ])
 
   const [weather] = useState<MarineWeather>({
@@ -83,7 +87,7 @@ function App() {
     weather: ''
   })
 
-  const handleAddCatch = () => {
+  const handleAddCatch = useCallback(() => {
     if (newCatch.species && newCatch.weight && newCatch.length && newCatch.location) {
       const now = new Date()
       const catchData: Catch = {
@@ -100,97 +104,251 @@ function App() {
       setNewCatch({ species: '', weight: '', length: '', location: '', weather: '' })
       setShowAddCatch(false)
     }
-  }
+  }, [newCatch, catches])
 
-  const totalCatches = catches.length
-  const totalWeight = catches.reduce((sum, c) => sum + c.weight, 0)
-  const avgWeight = totalCatches > 0 ? (totalWeight / totalCatches).toFixed(1) : 0
-  const biggestCatch = catches.length > 0 ? Math.max(...catches.map(c => c.weight)) : 0
+  // Close registration modal when tab changes
+  useEffect(() => {
+    if (showAddCatch) {
+      setShowAddCatch(false)
+    }
+  }, [activeTab])
+
+  // Close tips menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showTips && !target.closest('.tips-container')) {
+        setShowTips(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showTips])
+
+  // Memoize computed values to avoid recalculation on every render
+  const totalCatches = useMemo(() => catches.length, [catches])
+  const totalWeight = useMemo(() => catches.reduce((sum, c) => sum + c.weight, 0), [catches])
+  const avgWeight = useMemo(() => totalCatches > 0 ? (totalWeight / totalCatches).toFixed(1) : 0, [totalCatches, totalWeight])
+  const biggestCatch = useMemo(() => catches.length > 0 ? Math.max(...catches.map(c => c.weight)) : 0, [catches])
+  
+  // Memoize sorted spots to avoid sorting on every render
+  const sortedSpots = useMemo(() => [...spots].sort((a, b) => a.distance - b.distance), [spots])
+  const nearestSpot = useMemo(() => sortedSpots[0], [sortedSpots])
+  
+  // Memoize fish species list
+  const fishSpecies = useMemo(() => ['Tilápia', 'Traíra', 'Lambari', 'Tucunaré', 'Corvina', 'Robalo', 'Pacu', 'Pintado', 'Dourado', 'Bagre', 'Carpa', 'Piracanjuba', 'Curimbatá', 'Mandi', 'Cascudo'], [])
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: "linear-gradient(180deg, hsl(200 60% 85%) 0%, hsl(175 50% 70%) 100%)" }}>
+    <div className="min-h-screen pb-24 relative" style={{ background: "linear-gradient(180deg, hsl(200 60% 85%) 0%, hsl(175 50% 70%) 100%)" }}>
+      {/* Background Image with Opacity and Wave Animation */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center ocean-wave"
+        style={{ 
+          backgroundImage: "url('/Fundo.jpg')",
+          opacity: 0.3
+        }}
+      />
+      
       {activeTab === 'home' && (
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-lg mx-auto relative z-10">
           {/* Hero Section - Compact */}
-          <div className="px-5 pt-8 pb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Anchor className="w-4 h-4 text-gray-700/70" />
-              <span className="text-[10px] font-medium text-gray-700/70 tracking-wider uppercase">Boa Pescaria!</span>
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Anchor className="w-4 h-4 text-gray-700/70" />
+                <span className="text-[10px] font-medium text-gray-700/70 tracking-wider uppercase">Boa Pescaria!</span>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                Guia do Pescador<span className="text-gray-700"></span>
+              </h1>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-              Guia do Pescador<span className="text-gray-700"></span>
-            </h1>
+            
+            {/* Tips Button */}
+            <div className="relative tips-container" style={{ margin: '2mm' }}>
+              <button
+                onClick={() => setShowTips(!showTips)}
+                className="px-4 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 shadow-md"
+                style={{
+                  background: "hsl(50 100% 85%)",
+                  fontFamily: "'Comic Sans MS', cursive",
+                  color: "hsl(210 80% 45%)",
+                  fontSize: "14px",
+                  fontWeight: "bold"
+                }}
+              >
+                Dicas
+              </button>
+              
+              {/* Tips Dropdown Menu */}
+              {showTips && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border-2 border-blue-100 overflow-hidden z-50">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3">
+                    <h3 className="font-bold text-sm">📚 Dicas de Pesca</h3>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    <a
+                      href="https://www.youtube.com/results?search_query=nós+de+pesca+tutorial"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                    >
+                      <div className="font-semibold text-gray-800 text-sm">🪢 Nós de Pesca</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Aprenda os principais nós</div>
+                    </a>
+                    <a
+                      href="https://www.youtube.com/results?search_query=como+escolher+molinete+pesca"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                    >
+                      <div className="font-semibold text-gray-800 text-sm">🎣 Molinetes e Carretilhas</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Como escolher o ideal</div>
+                    </a>
+                    <a
+                      href="https://www.youtube.com/results?search_query=tipos+de+linha+de+pesca+nylon+multifilamento"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                    >
+                      <div className="font-semibold text-gray-800 text-sm">🧵 Linhas e Fios</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Nylon, multifilamento e mais</div>
+                    </a>
+                    <a
+                      href="https://www.youtube.com/results?search_query=como+escolher+vara+de+pesca"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                    >
+                      <div className="font-semibold text-gray-800 text-sm">🎋 Varas de Pesca</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Tipos e características</div>
+                    </a>
+                    <a
+                      href="https://www.youtube.com/results?search_query=iscas+artificiais+para+pesca"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                    >
+                      <div className="font-semibold text-gray-800 text-sm">🐟 Iscas Artificiais</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Tipos e quando usar</div>
+                    </a>
+                    <a
+                      href="https://www.youtube.com/results?search_query=técnicas+de+arremesso+pesca"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                    >
+                      <div className="font-semibold text-gray-800 text-sm">💪 Técnicas de Arremesso</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Melhore sua precisão</div>
+                    </a>
+                    <a
+                      href="https://www.youtube.com/results?search_query=manutenção+equipamento+pesca"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                    >
+                      <div className="font-semibold text-gray-800 text-sm">🔧 Manutenção de Equipamentos</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Cuide do seu material</div>
+                    </a>
+                    <a
+                      href="https://www.youtube.com/results?search_query=leitura+de+água+pesca"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 hover:bg-blue-50 transition-colors"
+                    >
+                      <div className="font-semibold text-gray-800 text-sm">🌊 Leitura de Água</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Encontre os melhores pontos</div>
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Bubble Buttons - Smaller */}
+          {/* Bubble Buttons - Soap Bubble Effect */}
           <div className="flex justify-center gap-4 my-4">
             <button
               onClick={() => setShowAddCatch(true)}
-              className="w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
+              className="bubble-button w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
               style={{ 
                 background: "hsl(195 80% 45%)",
-                borderColor: "hsl(195 80% 45% / 0.1)"
+                borderColor: "rgba(255, 255, 255, 0.3)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1), inset 0 -2px 8px rgba(0, 0, 0, 0.1)"
               }}
             >
-              <Plus className="w-6 h-6 text-white" />
-              <span className="text-[10px] font-semibold text-white">Registrar</span>
+              <Plus className="w-6 h-6 text-white relative z-10" />
+              <span className="text-[10px] font-semibold text-white relative z-10">Registrar</span>
             </button>
 
             <button
               onClick={() => setActiveTab('catches')}
-              className="w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
+              className="bubble-button w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
               style={{ 
-                background: "hsl(38 85% 55%)",
-                borderColor: "hsl(38 85% 55% / 0.1)"
+                background: "hsl(195 70% 65%)",
+                borderColor: "rgba(255, 255, 255, 0.3)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1), inset 0 -2px 8px rgba(0, 0, 0, 0.1)"
               }}
             >
-              <Fish className="w-6 h-6 text-gray-900" />
-              <span className="text-[10px] font-semibold text-gray-900">Capturas</span>
+              <Fish className="w-6 h-6 text-gray-900 relative z-10" />
+              <span className="text-[10px] font-semibold text-gray-900 relative z-10">Capturas</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('spots')}
+              className="bubble-button w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
+              style={{ 
+                background: "hsl(195 60% 75%)",
+                borderColor: "rgba(255, 255, 255, 0.3)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1), inset 0 -2px 8px rgba(0, 0, 0, 0.1)"
+              }}
+            >
+              <MapPin className="w-6 h-6 text-gray-900 relative z-10" />
+              <span className="text-[10px] font-semibold text-gray-900 relative z-10">Pontos</span>
             </button>
           </div>
 
-          {/* Cards - Compact */}
-          <div className="px-5 space-y-3">
+          {/* Weather Card - Fixed at Bottom */}
+          <div className="fixed bottom-[calc(4rem+3mm)] left-0 right-0 px-5 z-20">
             <div 
-              className="rounded-xl border p-4"
+              className="max-w-lg mx-auto rounded-2xl border-2 p-4"
               style={{ 
-                background: "hsl(210 25% 12%)",
-                borderColor: "hsl(210 20% 20%)",
-                boxShadow: "0 0 20px hsl(195 80% 45% / 0.1)"
+                background: "hsl(210 70% 20%)",
+                borderColor: "rgba(255, 255, 255, 0.15)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 -2px 8px rgba(0, 0, 0, 0.2)"
               }}
             >
               <div className="flex items-center gap-2 mb-3">
-                <Fish className="w-4 h-4" style={{ color: "hsl(195 80% 45%)" }} />
-                <h3 className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>Condições de Pesca</h3>
+                <Fish className="w-4 h-4 relative z-10" style={{ color: "hsl(195 80% 55%)" }} />
+                <h3 className="text-sm font-semibold relative z-10" style={{ color: "hsl(45 20% 95%)" }}>Condições de Pesca</h3>
                 <span 
-                  className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full"
+                  className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full relative z-10"
                   style={{ 
-                    background: "hsl(150 40% 35% / 0.2)",
-                    color: "hsl(150 40% 35%)"
+                    background: "hsl(150 50% 40% / 0.3)",
+                    color: "hsl(150 60% 60%)"
                   }}
                 >
                   {fishingCondition}
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-2 relative z-10">
                 <div className="flex flex-col items-center gap-0.5">
-                  <Cloud className="w-4 h-4" style={{ color: "hsl(38 85% 55%)" }} />
-                  <span className="text-[10px]" style={{ color: "hsl(210 15% 55%)" }}>Temp</span>
+                  <Cloud className="w-4 h-4" style={{ color: "hsl(38 85% 60%)" }} />
+                  <span className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Temp</span>
                   <span className="text-xs font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{weather.temp}°</span>
                 </div>
                 <div className="flex flex-col items-center gap-0.5">
-                  <Droplets className="w-4 h-4" style={{ color: "hsl(195 80% 45%)" }} />
-                  <span className="text-[10px]" style={{ color: "hsl(210 15% 55%)" }}>Umid</span>
+                  <Droplets className="w-4 h-4" style={{ color: "hsl(195 80% 55%)" }} />
+                  <span className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Umid</span>
                   <span className="text-xs font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{weather.humidity}%</span>
                 </div>
                 <div className="flex flex-col items-center gap-0.5">
-                  <Wind className="w-4 h-4" style={{ color: "hsl(150 40% 35%)" }} />
-                  <span className="text-[10px]" style={{ color: "hsl(210 15% 55%)" }}>Vento</span>
+                  <Wind className="w-4 h-4" style={{ color: "hsl(150 50% 50%)" }} />
+                  <span className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Vento</span>
                   <span className="text-xs font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{weather.windSpeed}</span>
                 </div>
                 <div className="flex flex-col items-center gap-0.5">
-                  <Sunrise className="w-4 h-4" style={{ color: "hsl(38 85% 55%)" }} />
-                  <span className="text-[10px]" style={{ color: "hsl(210 15% 55%)" }}>Nascer</span>
+                  <Sunrise className="w-4 h-4" style={{ color: "hsl(38 85% 60%)" }} />
+                  <span className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Nascer</span>
                   <span className="text-xs font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{sunrise}</span>
                 </div>
               </div>
@@ -250,20 +408,30 @@ function App() {
 
       {activeTab === 'spots' && (
         <div className="pb-20 max-w-2xl mx-auto">
-          <div className="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-b-3xl shadow-lg">
+          <div className="bg-gradient-to-r from-blue-800 to-blue-900 text-white p-6 rounded-b-3xl shadow-lg">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <MapPin className="w-7 h-7" />
               Pontos de Pesca
             </h1>
-            <p className="text-red-100 text-sm mt-1">{spots.length} locais cadastrados</p>
+            <p className="text-blue-100 text-sm mt-1">
+              {spots.length} locais cadastrados • Mais próximo: {nearestSpot.name} ({nearestSpot.distance} km)
+            </p>
           </div>
 
           <div className="p-4 space-y-3">
-            {spots.map((spot) => (
+            {sortedSpots.map((spot, index) => (
               <div key={spot.id} className="bg-white p-5 rounded-2xl shadow-md">
                 <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">{spot.name}</h3>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-gray-800">{spot.name}</h3>
+                      <span className="text-sm font-semibold text-blue-600">{spot.distance} km</span>
+                      {index === 0 && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                          Mais próximo
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500 mt-1">{spot.catches} capturas registradas</p>
                   </div>
                   <div className="flex items-center gap-1 bg-yellow-50 px-3 py-1 rounded-full">
@@ -271,7 +439,13 @@ function App() {
                     <span className="font-bold text-gray-700">{spot.rating}</span>
                   </div>
                 </div>
-                <button className="w-full bg-red-600 text-white py-2 rounded-xl font-semibold hover:bg-red-700 transition-colors active:scale-95">
+                <button 
+                  onClick={() => {
+                    const url = `https://www.google.com/maps/search/?api=1&query=${spot.latitude},${spot.longitude}`;
+                    window.open(url, '_blank');
+                  }}
+                  className="w-full bg-blue-800 text-white py-2 rounded-xl font-semibold hover:bg-blue-900 transition-colors active:scale-95"
+                >
                   Ver no Mapa
                 </button>
               </div>
@@ -291,6 +465,69 @@ function App() {
           </div>
 
           <div className="p-4 space-y-4">
+            {/* Profile Photo Bubble */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="relative">
+                <div 
+                  className="bubble-button rounded-full w-24 h-24 flex items-center justify-center overflow-hidden"
+                  style={{ 
+                    background: "hsl(195 70% 65%)",
+                    borderColor: "rgba(255, 255, 255, 0.3)",
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1), inset 0 -2px 8px rgba(0, 0, 0, 0.1)",
+                    border: "2px solid rgba(255, 255, 255, 0.3)"
+                  }}
+                >
+                  <svg 
+                    className="w-12 h-12 relative z-10" 
+                    viewBox="0 0 24 24" 
+                    fill="hsl(200 15% 75%)"
+                    opacity="0.8"
+                  >
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>
+                {/* Camera icon button */}
+                <button
+                  className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                  style={{
+                    background: "hsl(195 80% 45%)",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                    border: "2px solid white"
+                  }}
+                  onClick={() => {
+                    // Trigger file input
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.click();
+                  }}
+                >
+                  <svg 
+                    className="w-4 h-4 text-white" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" 
+                    />
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" 
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Pescador</h2>
+                <p className="text-sm text-gray-500">Membro desde 2026</p>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white p-5 rounded-2xl shadow-md text-center">
                 <Fish className="w-8 h-8 text-blue-600 mx-auto mb-2" />
@@ -938,31 +1175,66 @@ function App() {
       )}
 
       {showAddCatch && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-          <div className="bg-white w-full max-w-lg rounded-t-3xl p-6 animate-slide-up">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">Nova Captura</h2>
               <button
                 onClick={() => setShowAddCatch(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
               >
                 ×
               </button>
             </div>
             <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Espécie do peixe"
-                value={newCatch.species}
-                onChange={(e) => setNewCatch({ ...newCatch, species: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              />
+              <select
+                value={newCatch.species === '' || fishSpecies.includes(newCatch.species) ? newCatch.species : 'Outro'}
+                onChange={(e) => {
+                  if (e.target.value === 'Outro') {
+                    setNewCatch({ ...newCatch, species: '' })
+                  } else {
+                    setNewCatch({ ...newCatch, species: e.target.value })
+                  }
+                }}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+              >
+                <option value="">Espécie do peixe</option>
+                <option value="Tilápia">Tilápia</option>
+                <option value="Traíra">Traíra</option>
+                <option value="Lambari">Lambari</option>
+                <option value="Tucunaré">Tucunaré</option>
+                <option value="Corvina">Corvina</option>
+                <option value="Robalo">Robalo</option>
+                <option value="Pacu">Pacu</option>
+                <option value="Pintado">Pintado</option>
+                <option value="Dourado">Dourado</option>
+                <option value="Bagre">Bagre</option>
+                <option value="Carpa">Carpa</option>
+                <option value="Piracanjuba">Piracanjuba</option>
+                <option value="Curimbatá">Curimbatá</option>
+                <option value="Mandi">Mandi</option>
+                <option value="Cascudo">Cascudo</option>
+                <option value="Outro">✏️ Outro (digitar)</option>
+              </select>
+              
+              {(newCatch.species === '' || !fishSpecies.includes(newCatch.species)) && newCatch.species !== '' && (
+                <input
+                  type="text"
+                  placeholder="Digite a espécie do peixe"
+                  value={newCatch.species}
+                  onChange={(e) => setNewCatch({ ...newCatch, species: e.target.value })}
+                  className="w-full p-3 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-blue-50"
+                  autoFocus
+                />
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="number"
                   placeholder="Peso (kg)"
                   value={newCatch.weight}
                   onChange={(e) => setNewCatch({ ...newCatch, weight: e.target.value })}
+                  min="0"
+                  step="0.01"
                   className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
                 <input
@@ -970,6 +1242,8 @@ function App() {
                   placeholder="Comprimento (cm)"
                   value={newCatch.length}
                   onChange={(e) => setNewCatch({ ...newCatch, length: e.target.value })}
+                  min="0"
+                  step="1"
                   className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
