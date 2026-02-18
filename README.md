@@ -1,73 +1,102 @@
-# React + TypeScript + Vite
+# 🎣 Fishing App - Guia do Pescador
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicativo mobile-first para pescadores registrarem capturas, encontrarem pontos de pesca e acompanharem condições climáticas.
 
-Currently, two official plugins are available:
+## 🎨 Design
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Interface inspirada no **FISHFINDER Loveble** com:
+- Gradiente suave azul/ciano no fundo
+- Cards escuros com bordas sutis
+- Tipografia: Outfit (corpo) e Space Grotesk (títulos)
+- Botões circulares de ação rápida
+- Design compacto e minimalista
 
-## React Compiler
+## 🏗️ Arquitetura
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+O projeto está separado em camadas independentes:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+📁 FISHINGAPP/
+├── 🎨 Frontend (React + TypeScript + Vite)
+├── 🔌 API (Express Routes)
+├── ⚙️  Backend (Controllers)
+└── 💾 Database (PostgreSQL / In-memory)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+**Veja detalhes completos em**: [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🚀 Como Executar
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Backend (API)
+```bash
+cd backend
+npm install
+npm run dev
 ```
+Servidor rodando em `http://localhost:3001`
+
+### 2. Frontend
+```bash
+npm install
+npm run dev
+```
+App rodando em `http://localhost:5173`
+
+## 📋 Funcionalidades
+
+- ✅ Registrar capturas de peixes
+- ✅ Visualizar histórico de capturas
+- ✅ Pontos de pesca favoritos
+- ✅ Condições climáticas em tempo real
+- ✅ Estatísticas de pesca
+- ✅ Design responsivo mobile-first
+
+## 🛠️ Tecnologias
+
+### Frontend
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+- Lucide Icons
+
+### Backend
+- Node.js
+- Express.js
+- CORS
+
+### Database
+- PostgreSQL (produção)
+- In-memory (desenvolvimento)
+
+## 📝 API Endpoints
+
+```
+GET    /api/catches          # Lista capturas
+POST   /api/catches          # Cria captura
+GET    /api/spots            # Lista pontos
+GET    /api/weather/current  # Clima atual
+```
+
+## 🔐 Configuração
+
+1. Copie `.env.example` para `.env`
+2. Configure as variáveis de ambiente
+3. Execute backend e frontend
+
+## 📚 Documentação
+
+- [Arquitetura Completa](./ARCHITECTURE.md)
+- [Schema do Banco](./backend/database/schema.sql)
+
+## 🎯 Próximos Passos
+
+- [ ] Conectar frontend com backend
+- [ ] Implementar autenticação
+- [ ] Deploy em produção
+- [ ] Adicionar geolocalização
+- [ ] Integração com API de clima real
+
+---
+
+Desenvolvido com ❤️ para pescadores

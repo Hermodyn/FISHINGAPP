@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Waves, Wind, Sunrise, Sunset, Moon, Droplets, Gauge, Anchor, Activity, Map, Wrench, Worm, Timer, Target, Leaf, BookOpen } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Waves, Wind, Sunrise, Droplets, Anchor, Activity } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -20,6 +20,18 @@ interface FishingSpot {
   rating: number
 }
 
+interface Location {
+  latitude: number
+  longitude: number
+  accuracy: number
+}
+
+interface TideData {
+  time: string
+  height: number
+  type: 'high' | 'low'
+}
+
 interface MarineWeather {
   temp: number
   windSpeed: number
@@ -31,7 +43,7 @@ interface MarineWeather {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'stats' | 'planning' | 'equipment' | 'baits' | 'times' | 'techniques' | 'environment'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'stats'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [catches, setCatches] = useState<Catch[]>([
     {
@@ -62,6 +74,13 @@ function App() {
     { id: 3, name: 'Barra da Lagoa', catches: 8, rating: 4.0 }
   ])
 
+  const [tides] = useState<TideData[]>([
+    { time: '05:42', height: 1.2, type: 'high' },
+    { time: '11:58', height: 0.3, type: 'low' },
+    { time: '18:15', height: 1.4, type: 'high' },
+    { time: '23:45', height: 0.2, type: 'low' }
+  ])
+
   const [weather] = useState<MarineWeather>({
     temp: 23,
     windSpeed: 12,
@@ -72,8 +91,10 @@ function App() {
     visibility: 10
   })
 
+  const moonPhase = 0.65
   const fishingCondition = 'Bom'
   const sunrise = '06:15'
+  const sunset = '19:42'
 
   const [newCatch, setNewCatch] = useState({
     species: '',
@@ -102,68 +123,120 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          })
+          setLoadingLocation(false)
+        },
+        () => {
+          setLocationError('Não foi possível obter sua localização')
+          setLoadingLocation(false)
+        }
+      )
+    } else {
+      setLocationError('GPS não disponível')
+      setLoadingLocation(false)
+    }
+  }, [])
+
   const totalCatches = catches.length
   const totalWeight = catches.reduce((sum, c) => sum + c.weight, 0)
   const avgWeight = totalCatches > 0 ? (totalWeight / totalCatches).toFixed(1) : 0
   const biggestCatch = catches.length > 0 ? Math.max(...catches.map(c => c.weight)) : 0
 
+  const getMoonPhaseIcon = (phase: number) => {
+    if (phase < 0.125) return '🌑'
+    if (phase < 0.375) return '🌒'
+    if (phase < 0.625) return '🌓'
+    if (phase < 0.875) return '🌔'
+    return '🌕'
+  }
+
+  const getNextTide = () => {
+    const now = new Date()
+    const currentTime = now.getHours() * 60 + now.getMinutes()
+    return tides.find(tide => {
+      const [hours, minutes] = tide.time.split(':').map(Number)
+      const tideTime = hours * 60 + minutes
+      return tideTime > currentTime
+    }) || tides[0]
+  }
+
+  const nextTide = getNextTide()
+
   return (
     <div className="min-h-screen pb-24" style={{ background: "linear-gradient(180deg, hsl(200 60% 85%) 0%, hsl(175 50% 70%) 100%)" }}>
       {activeTab === 'home' && (
         <div className="max-w-lg mx-auto">
-          {/* Hero Section - Compact */}
-          <div className="px-5 pt-8 pb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Anchor className="w-4 h-4 text-gray-700/70" />
-              <span className="text-[10px] font-medium text-gray-700/70 tracking-wider uppercase">Boa Pescaria!</span>
+          {/* Hero Section */}
+          <div className="px-6 pt-14 pb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <Anchor className="w-5 h-5 text-gray-700/70" />
+              <span className="text-xs font-medium text-gray-700/70 tracking-wider uppercase">Guia do Pescador</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-              Guia do Pescador<span className="text-gray-700"></span>
+            <h1 className="text-3xl font-bold text-gray-900 leading-tight">
+               pescar,<br />
+              <span className="text-gray-700">Pescador!</span>
             </h1>
           </div>
 
-          {/* Bubble Buttons - Smaller */}
-          <div className="flex justify-center gap-4 my-4">
+          {/* Fish Watermark */}
+          <div className="flex justify-center my-6">
+            <div className="text-8xl opacity-15" style={{ transform: "rotate(-10deg)", mixBlendMode: "multiply" }}>
+              🐟
+            </div>
+          </div>
+
+          {/* Bubble Buttons */}
+          <div className="flex justify-center gap-6 my-8">
             <button
               onClick={() => setShowAddCatch(true)}
-              className="w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
+              className="w-24 h-24 rounded-full flex flex-col items-center justify-center gap-1.5 shadow-lg border-2 transition-all hover:scale-110 active:scale-95"
               style={{ 
                 background: "hsl(195 80% 45%)",
-                borderColor: "hsl(195 80% 45% / 0.1)"
+                borderColor: "hsl(195 80% 45% / 0.1)",
+                backdropFilter: "blur(8px)"
               }}
             >
-              <Plus className="w-6 h-6 text-white" />
-              <span className="text-[10px] font-semibold text-white">Registrar</span>
+              <Plus className="w-8 h-8 text-white" />
+              <span className="text-[11px] font-semibold text-white">Registrar</span>
             </button>
 
             <button
               onClick={() => setActiveTab('catches')}
-              className="w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
+              className="w-24 h-24 rounded-full flex flex-col items-center justify-center gap-1.5 shadow-lg border-2 transition-all hover:scale-110 active:scale-95"
               style={{ 
                 background: "hsl(38 85% 55%)",
-                borderColor: "hsl(38 85% 55% / 0.1)"
+                borderColor: "hsl(38 85% 55% / 0.1)",
+                backdropFilter: "blur(8px)"
               }}
             >
-              <Fish className="w-6 h-6 text-gray-900" />
-              <span className="text-[10px] font-semibold text-gray-900">Capturas</span>
+              <Fish className="w-8 h-8 text-gray-900" />
+              <span className="text-[11px] font-semibold text-gray-900">Capturas</span>
             </button>
           </div>
 
-          {/* Cards - Compact */}
-          <div className="px-5 space-y-3">
+          {/* Weather Card - FISHFINDER Style */}
+          <div className="px-5 space-y-4">
             <div 
-              className="rounded-xl border p-4"
+              className="rounded-2xl border p-5"
               style={{ 
                 background: "hsl(210 25% 12%)",
                 borderColor: "hsl(210 20% 20%)",
-                boxShadow: "0 0 20px hsl(195 80% 45% / 0.1)"
+                boxShadow: "0 0 30px hsl(195 80% 45% / 0.15)"
               }}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <Fish className="w-4 h-4" style={{ color: "hsl(195 80% 45%)" }} />
-                <h3 className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>Condições de Pesca</h3>
+              <div className="flex items-center gap-2 mb-4">
+                <Fish className="w-5 h-5" style={{ color: "hsl(195 80% 45%)" }} />
+                <h3 className="font-semibold" style={{ color: "hsl(45 20% 95%)" }}>Condições de Pesca</h3>
                 <span 
-                  className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full"
+                  className="ml-auto text-xs font-medium px-2 py-1 rounded-full"
                   style={{ 
                     background: "hsl(150 40% 35% / 0.2)",
                     color: "hsl(150 40% 35%)"
@@ -172,26 +245,103 @@ function App() {
                   {fishingCondition}
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                <div className="flex flex-col items-center gap-0.5">
-                  <Cloud className="w-4 h-4" style={{ color: "hsl(38 85% 55%)" }} />
-                  <span className="text-[10px]" style={{ color: "hsl(210 15% 55%)" }}>Temp</span>
-                  <span className="text-xs font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{weather.temp}°</span>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="flex flex-col items-center gap-1">
+                  <Cloud className="w-5 h-5" style={{ color: "hsl(38 85% 55%)" }} />
+                  <span className="text-xs" style={{ color: "hsl(210 15% 55%)" }}>Temp</span>
+                  <span className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{weather.temp}°C</span>
                 </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <Droplets className="w-4 h-4" style={{ color: "hsl(195 80% 45%)" }} />
-                  <span className="text-[10px]" style={{ color: "hsl(210 15% 55%)" }}>Umid</span>
-                  <span className="text-xs font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{weather.humidity}%</span>
+                <div className="flex flex-col items-center gap-1">
+                  <Droplets className="w-5 h-5" style={{ color: "hsl(195 80% 45%)" }} />
+                  <span className="text-xs" style={{ color: "hsl(210 15% 55%)" }}>Umidade</span>
+                  <span className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{weather.humidity}%</span>
                 </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <Wind className="w-4 h-4" style={{ color: "hsl(150 40% 35%)" }} />
-                  <span className="text-[10px]" style={{ color: "hsl(210 15% 55%)" }}>Vento</span>
-                  <span className="text-xs font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{weather.windSpeed}</span>
+                <div className="flex flex-col items-center gap-1">
+                  <Wind className="w-5 h-5" style={{ color: "hsl(150 40% 35%)" }} />
+                  <span className="text-xs" style={{ color: "hsl(210 15% 55%)" }}>Vento</span>
+                  <span className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{weather.windSpeed} km/h</span>
                 </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <Sunrise className="w-4 h-4" style={{ color: "hsl(38 85% 55%)" }} />
-                  <span className="text-[10px]" style={{ color: "hsl(210 15% 55%)" }}>Nascer</span>
-                  <span className="text-xs font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{sunrise}</span>
+                <div className="flex flex-col items-center gap-1">
+                  <Sunrise className="w-5 h-5" style={{ color: "hsl(38 85% 55%)" }} />
+                  <span className="text-xs" style={{ color: "hsl(210 15% 55%)" }}>Nascer</span>
+                  <span className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{sunrise}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Catches Card - FISHFINDER Style */}
+            <div 
+              className="rounded-2xl border p-5"
+              style={{ 
+                background: "hsl(210 25% 12%)",
+                borderColor: "hsl(210 20% 20%)",
+                boxShadow: "0 0 30px hsl(195 80% 45% / 0.15)"
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2" style={{ color: "hsl(45 20% 95%)" }}>
+                  <Fish className="w-5 h-5" style={{ color: "hsl(195 80% 45%)" }} />
+                  Últimas Capturas
+                </h3>
+                <button 
+                  className="text-xs font-medium"
+                  style={{ color: "hsl(195 80% 45%)" }}
+                  onClick={() => setActiveTab('catches')}
+                >
+                  Ver todas
+                </button>
+              </div>
+              <div className="space-y-3">
+                {catches.slice(0, 3).map((catch_, i) => (
+                  <div 
+                    key={catch_.id} 
+                    className="flex items-center gap-4 rounded-xl p-4"
+                    style={{ 
+                      background: "hsl(210 20% 18%)",
+                      border: "1px solid hsl(210 20% 20%)"
+                    }}
+                  >
+                    <div 
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                      style={{ background: "hsl(210 20% 18%)" }}
+                    >
+                      🐟
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{catch_.species}</p>
+                      <div className="flex items-center gap-3 text-xs mt-1" style={{ color: "hsl(210 15% 55%)" }}>
+                        <span className="flex items-center gap-1">
+                          <Weight className="w-3 h-3" />{catch_.weight} kg
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />{catch_.location}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs" style={{ color: "hsl(210 15% 55%)" }}>
+                      <Clock className="w-3 h-3" />
+                      {new Date(catch_.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tip Card - FISHFINDER Style */}
+            <div 
+              className="rounded-2xl border p-4"
+              style={{ 
+                background: "linear-gradient(135deg, hsl(150 40% 35%), hsl(170 50% 25%))",
+                borderColor: "hsl(210 20% 20%)"
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <Activity className="w-5 h-5 mt-0.5 shrink-0" style={{ color: "hsl(38 85% 55%)" }} />
+                <div>
+                  <p className="text-xs font-medium mb-1" style={{ color: "hsl(38 85% 55%)" }}>Dica do Dia</p>
+                  <p className="text-sm leading-relaxed" style={{ color: "hsl(45 20% 95%)" }}>
+                    🌅 Peixes são mais ativos ao amanhecer e entardecer
+                  </p>
                 </div>
               </div>
             </div>
