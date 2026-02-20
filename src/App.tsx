@@ -40,25 +40,6 @@ interface PhotoGallery {
   date: string
 }
 
-interface LeaguePlayer {
-  id: number
-  name: string
-  avatar: string
-  totalWeight: number
-  totalCatches: number
-  rank: number
-}
-
-interface ForumPost {
-  id: number
-  author: string
-  title: string
-  content: string
-  date: string
-  likes: number
-  comments: number
-}
-
 interface Championship {
   id: number
   name: string
@@ -88,11 +69,10 @@ interface SubscriptionPlan {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription' | 'community' | 'leagues'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription' | 'community' | 'leagues' | 'stats'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [showTips, setShowTips] = useState(false)
   const [showAIScanner, setShowAIScanner] = useState(false)
-  const [selectedLeague, setSelectedLeague] = useState<'friends' | 'weight'>('friends')
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoGallery | null>(null)
   const [showFriendsGallery, setShowFriendsGallery] = useState(false)
   const [catches, setCatches] = useState<Catch[]>([
@@ -150,21 +130,6 @@ function App() {
     { id: 4, url: 'https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=400', catchId: 3, date: '2026-02-12' }
   ])
 
-  // V2.0 - League Players Data
-  const [leaguePlayers] = useState<LeaguePlayer[]>([
-    { id: 1, name: 'You', avatar: '👤', totalWeight: 15.8, totalCatches: 12, rank: 1 },
-    { id: 2, name: 'John Fisher', avatar: '🎣', totalWeight: 14.2, totalCatches: 10, rank: 2 },
-    { id: 3, name: 'Mike Waters', avatar: '🐟', totalWeight: 12.5, totalCatches: 15, rank: 3 },
-    { id: 4, name: 'Sarah Ocean', avatar: '🌊', totalWeight: 11.3, totalCatches: 9, rank: 4 },
-    { id: 5, name: 'Tom Bass', avatar: '⚓', totalWeight: 10.1, totalCatches: 8, rank: 5 }
-  ])
-
-  // V2.0 - Forum Posts Data
-  const [forumPosts] = useState<ForumPost[]>([
-    { id: 1, author: 'Mike Waters', title: 'Best spots for bass fishing in winter', content: 'I\'ve been fishing at Lagoa da Conceição and found some great spots...', date: '2026-02-18', likes: 24, comments: 8 },
-    { id: 2, author: 'Sarah Ocean', title: 'New lure technique - Amazing results!', content: 'Just tried this new technique with artificial lures and caught 5 fish...', date: '2026-02-17', likes: 31, comments: 12 },
-    { id: 3, author: 'John Fisher', title: 'Weather patterns and fishing success', content: 'I\'ve noticed that fishing right before a storm brings better results...', date: '2026-02-16', likes: 18, comments: 5 }
-  ])
 
   // Championships Data
   const [championships] = useState<Championship[]>([
@@ -920,100 +885,8 @@ function App() {
         </div>
       )}
 
-      {activeTab === 'planning' && (
-        <div className="pb-20 max-w-2xl mx-auto">
-          <div className="bg-gradient-to-br from-teal-600 to-cyan-700 text-white p-4">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Map className="w-7 h-7" />
-              Planejamento do Local
-            </h1>
-            <p className="text-xs text-teal-100 mt-1">Conheça o ambiente de pesca</p>
-          </div>
-
-          <div className="p-4 space-y-4">
-            <div className="bg-white rounded-2xl shadow-md p-4">
-              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <Waves className="w-5 h-5 text-blue-600" />
-                Tipo de Ambiente
-              </h3>
-              <div className="space-y-3">
-                <div className="bg-blue-50 p-4 rounded-xl">
-                  <h4 className="font-semibold text-blue-900 mb-2">🌊 Mar</h4>
-                  <p className="text-sm text-gray-700">Pesca oceânica, costeira ou de praia. Requer equipamento resistente à corrosão e atenção às marés.</p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-xl">
-                  <h4 className="font-semibold text-green-900 mb-2">🏞️ Rio</h4>
-                  <p className="text-sm text-gray-700">Água corrente com diferentes velocidades. Observe correnteza e profundidade para escolher técnica adequada.</p>
-                </div>
-                <div className="bg-cyan-50 p-4 rounded-xl">
-                  <h4 className="font-semibold text-cyan-900 mb-2">🏔️ Lago/Represa</h4>
-                  <p className="text-sm text-gray-700">Águas calmas e profundas. Ideal para iniciantes. Atenção à estrutura subaquática.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-md p-4">
-              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <Gauge className="w-5 h-5 text-purple-600" />
-                Profundidade
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-gray-700">Rasa (0-2m)</span>
-                  <span className="text-sm text-gray-600">Traíras, lambaris</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-gray-700">Média (2-10m)</span>
-                  <span className="text-sm text-gray-600">Robalos, corvinas</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-gray-700">Profunda (10m+)</span>
-                  <span className="text-sm text-gray-600">Dourados, pirarucus</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-md p-4">
-              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <Wind className="w-5 h-5 text-cyan-600" />
-                Correnteza
-              </h3>
-              <p className="text-sm text-gray-700 mb-3">A velocidade da água influencia diretamente na escolha de iscas e peso de chumbada.</p>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-green-50 p-3 rounded-lg text-center">
-                  <p className="font-bold text-green-700">Fraca</p>
-                  <p className="text-xs text-gray-600 mt-1">Iscas leves</p>
-                </div>
-                <div className="bg-yellow-50 p-3 rounded-lg text-center">
-                  <p className="font-bold text-yellow-700">Média</p>
-                  <p className="text-xs text-gray-600 mt-1">Peso moderado</p>
-                </div>
-                <div className="bg-red-50 p-3 rounded-lg text-center">
-                  <p className="font-bold text-red-700">Forte</p>
-                  <p className="text-xs text-gray-600 mt-1">Peso pesado</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-md p-4">
-              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <Fish className="w-5 h-5 text-orange-600" />
-                Espécies Comuns
-              </h3>
-              <div className="space-y-2">
-                {['Robalo', 'Corvina', 'Dourado', 'Tucunaré', 'Traíra', 'Pacu'].map((species, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg">
-                    <span className="font-semibold text-gray-800">{species}</span>
-                    <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded-full">Popular</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'equipment' && (
+      {/* Championships Tab */}
+      {activeTab === 'championships' && (
         <div className="pb-20 max-w-2xl mx-auto">
           <div className="bg-gradient-to-br from-orange-600 to-red-700 text-white p-4">
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -1096,7 +969,7 @@ function App() {
         </div>
       )}
 
-      {activeTab === 'baits' && (
+      {/* {activeTab === 'baits' && (
         <div className="pb-20 max-w-2xl mx-auto">
           <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white p-4">
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -1187,7 +1060,7 @@ function App() {
         </div>
       )}
 
-      {activeTab === 'times' && (
+      */ } {/* {activeTab === 'times' && (
         <div className="pb-20 max-w-2xl mx-auto">
           <div className="bg-gradient-to-br from-purple-600 to-pink-700 text-white p-4">
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -1283,7 +1156,7 @@ function App() {
         </div>
       )}
 
-      {activeTab === 'techniques' && (
+      */ } {/* {activeTab === 'techniques' && (
         <div className="pb-20 max-w-2xl mx-auto">
           <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-4">
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -1381,7 +1254,7 @@ function App() {
         </div>
       )}
 
-      {activeTab === 'environment' && (
+      */ } {/* {activeTab === 'environment' && (
         <div className="pb-20 max-w-2xl mx-auto">
           <div className="bg-gradient-to-br from-green-700 to-teal-700 text-white p-4">
             <h1 className="text-2xl font-bold flex items-center gap-2">
