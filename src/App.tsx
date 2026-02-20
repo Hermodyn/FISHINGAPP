@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Waves, Wind, Sunrise, Sunset, Moon, Droplets, Gauge, Anchor, Activity, Map, Wrench, Worm, Timer, Target, Leaf, BookOpen } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Waves, Wind, Sunrise, Sunset, Moon, Droplets, Gauge, Anchor, Activity, Map, Wrench, Worm, Timer, Target, Leaf, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Image, Info } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -33,10 +33,67 @@ interface MarineWeather {
   visibility: number
 }
 
+interface PhotoGallery {
+  id: number
+  url: string
+  catchId: number
+  date: string
+}
+
+interface LeaguePlayer {
+  id: number
+  name: string
+  avatar: string
+  totalWeight: number
+  totalCatches: number
+  rank: number
+}
+
+interface ForumPost {
+  id: number
+  author: string
+  title: string
+  content: string
+  date: string
+  likes: number
+  comments: number
+}
+
+interface Championship {
+  id: number
+  name: string
+  location: string
+  date: string
+  prize: string
+  participants: number
+  maxParticipants: number
+  status: 'open' | 'closed' | 'ongoing'
+}
+
+interface Sponsor {
+  id: number
+  name: string
+  type: 'store' | 'factory' | 'prize'
+  logo: string
+  description: string
+  discount?: string
+}
+
+interface SubscriptionPlan {
+  id: number
+  name: string
+  price: string
+  features: string[]
+  popular?: boolean
+}
+
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'stats' | 'planning' | 'equipment' | 'baits' | 'times' | 'techniques' | 'environment'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [showTips, setShowTips] = useState(false)
+  const [showAIScanner, setShowAIScanner] = useState(false)
+  const [selectedLeague, setSelectedLeague] = useState<'friends' | 'weight'>('friends')
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoGallery | null>(null)
   const [catches, setCatches] = useState<Catch[]>([
     {
       id: 1,
@@ -78,6 +135,70 @@ function App() {
 
   const fishingCondition = 'Bom'
   const sunrise = '06:15'
+
+  // V2.0 - Photo Gallery Data
+  const [photoGallery] = useState<PhotoGallery[]>([
+    { id: 1, url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400', catchId: 1, date: '2026-02-15' },
+    { id: 2, url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400', catchId: 2, date: '2026-02-14' },
+    { id: 3, url: 'https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=400', catchId: 1, date: '2026-02-13' },
+    { id: 4, url: 'https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=400', catchId: 3, date: '2026-02-12' }
+  ])
+
+  // V2.0 - League Players Data
+  const [leaguePlayers] = useState<LeaguePlayer[]>([
+    { id: 1, name: 'You', avatar: '👤', totalWeight: 15.8, totalCatches: 12, rank: 1 },
+    { id: 2, name: 'John Fisher', avatar: '🎣', totalWeight: 14.2, totalCatches: 10, rank: 2 },
+    { id: 3, name: 'Mike Waters', avatar: '🐟', totalWeight: 12.5, totalCatches: 15, rank: 3 },
+    { id: 4, name: 'Sarah Ocean', avatar: '🌊', totalWeight: 11.3, totalCatches: 9, rank: 4 },
+    { id: 5, name: 'Tom Bass', avatar: '⚓', totalWeight: 10.1, totalCatches: 8, rank: 5 }
+  ])
+
+  // V2.0 - Forum Posts Data
+  const [forumPosts] = useState<ForumPost[]>([
+    { id: 1, author: 'Mike Waters', title: 'Best spots for bass fishing in winter', content: 'I\'ve been fishing at Lagoa da Conceição and found some great spots...', date: '2026-02-18', likes: 24, comments: 8 },
+    { id: 2, author: 'Sarah Ocean', title: 'New lure technique - Amazing results!', content: 'Just tried this new technique with artificial lures and caught 5 fish...', date: '2026-02-17', likes: 31, comments: 12 },
+    { id: 3, author: 'John Fisher', title: 'Weather patterns and fishing success', content: 'I\'ve noticed that fishing right before a storm brings better results...', date: '2026-02-16', likes: 18, comments: 5 }
+  ])
+
+  // Championships Data
+  const [championships] = useState<Championship[]>([
+    { id: 1, name: 'São Paulo Bass Championship 2026', location: 'Represa Billings', date: '2026-03-15', prize: 'R$ 10,000', participants: 45, maxParticipants: 50, status: 'open' },
+    { id: 2, name: 'Guarapiranga Fishing Tournament', location: 'Represa Guarapiranga', date: '2026-03-22', prize: 'R$ 5,000 + Equipments', participants: 32, maxParticipants: 40, status: 'open' },
+    { id: 3, name: 'Winter Fishing Challenge', location: 'Pesqueiro Maeda', date: '2026-04-10', prize: 'R$ 8,000', participants: 28, maxParticipants: 35, status: 'open' },
+    { id: 4, name: 'Taboão Lake Masters', location: 'Lago do Taboão', date: '2026-02-25', prize: 'R$ 3,000', participants: 25, maxParticipants: 25, status: 'ongoing' }
+  ])
+
+  // Sponsors Data
+  const [sponsors] = useState<Sponsor[]>([
+    { id: 1, name: 'Pesca & Cia', type: 'store', logo: '🏪', description: 'Complete fishing equipment store with 20% discount for members', discount: '20% OFF' },
+    { id: 2, name: 'Marine Pro', type: 'factory', logo: '🏭', description: 'Premium fishing rods and reels manufacturer', discount: '15% OFF' },
+    { id: 3, name: 'FishTech', type: 'factory', logo: '⚙️', description: 'Advanced fishing electronics and accessories' },
+    { id: 4, name: 'Troféu Dourado', type: 'prize', logo: '🏆', description: 'Official championship prizes and awards supplier' },
+    { id: 5, name: 'Anzol Forte', type: 'store', logo: '🎣', description: 'Hooks, lines, and baits specialist', discount: '10% OFF' }
+  ])
+
+  // Subscription Plans Data
+  const [subscriptionPlans] = useState<SubscriptionPlan[]>([
+    { 
+      id: 1, 
+      name: 'Free', 
+      price: 'R$ 0/month', 
+      features: ['Basic catch logging', 'View public spots', 'Community forum access', 'Up to 10 photos']
+    },
+    { 
+      id: 2, 
+      name: 'Pro', 
+      price: 'R$ 19.90/month', 
+      features: ['Unlimited catch logging', 'Advanced statistics', 'AI Fish Scanner', 'Unlimited photos', 'Priority support', 'Ad-free experience'],
+      popular: true
+    },
+    { 
+      id: 3, 
+      name: 'Premium', 
+      price: 'R$ 39.90/month', 
+      features: ['All Pro features', 'Championship registration', 'Exclusive sponsor discounts', 'Weather predictions', 'Private fishing groups', 'Coaching sessions']
+    }
+  ])
 
   const [newCatch, setNewCatch] = useState({
     species: '',
@@ -157,10 +278,10 @@ function App() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Anchor className="w-4 h-4 text-gray-700/70" />
-                <span className="text-[10px] font-medium text-gray-700/70 tracking-wider uppercase">Boa Pescaria!</span>
+                <span className="text-[10px] font-medium text-gray-700/70 tracking-wider uppercase">Good Fishing!</span>
               </div>
               <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-                Guia do Pescador<span className="text-gray-700"></span>
+                Fisher's Guidapp<span className="text-gray-700 text-sm ml-2">v2.0</span>
               </h1>
             </div>
             
@@ -177,14 +298,14 @@ function App() {
                   fontWeight: "bold"
                 }}
               >
-                Dicas
+                Tips
               </button>
               
               {/* Tips Dropdown Menu */}
               {showTips && (
                 <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border-2 border-blue-100 overflow-hidden z-50">
                   <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3">
-                    <h3 className="font-bold text-sm">📚 Dicas de Pesca</h3>
+                    <h3 className="font-bold text-sm">📚 Fishing Tips</h3>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     <a
@@ -265,46 +386,101 @@ function App() {
             </div>
           </div>
 
-          {/* Bubble Buttons - Soap Bubble Effect */}
-          <div className="flex justify-center gap-4 my-4">
+          {/* Main Action Buttons - Large Square Buttons */}
+          <div className="grid grid-cols-3 gap-3 mb-4 px-4">
             <button
               onClick={() => setShowAddCatch(true)}
-              className="bubble-button w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
-              style={{ 
-                background: "hsl(195 80% 45%)",
-                borderColor: "rgba(255, 255, 255, 0.3)",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1), inset 0 -2px 8px rgba(0, 0, 0, 0.1)"
-              }}
+              className="aspect-square bg-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border-2 border-blue-100"
             >
-              <Plus className="w-6 h-6 text-white relative z-10" />
-              <span className="text-[10px] font-semibold text-white relative z-10">Registrar</span>
+              <Plus className="w-10 h-10 text-blue-600" strokeWidth={2.5} />
+              <span className="text-xs font-bold text-gray-800">Register</span>
             </button>
 
             <button
               onClick={() => setActiveTab('catches')}
-              className="bubble-button w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
-              style={{ 
-                background: "hsl(195 70% 65%)",
-                borderColor: "rgba(255, 255, 255, 0.3)",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1), inset 0 -2px 8px rgba(0, 0, 0, 0.1)"
-              }}
+              className="aspect-square bg-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border-2 border-blue-100"
             >
-              <Fish className="w-6 h-6 text-gray-900 relative z-10" />
-              <span className="text-[10px] font-semibold text-gray-900 relative z-10">Capturas</span>
+              <Fish className="w-10 h-10 text-blue-600" strokeWidth={2} />
+              <span className="text-xs font-bold text-gray-800">Catches</span>
             </button>
 
             <button
               onClick={() => setActiveTab('spots')}
-              className="bubble-button w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg border-2 transition-all hover:scale-105 active:scale-95"
-              style={{ 
-                background: "hsl(195 60% 75%)",
-                borderColor: "rgba(255, 255, 255, 0.3)",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1), inset 0 -2px 8px rgba(0, 0, 0, 0.1)"
-              }}
+              className="aspect-square bg-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border-2 border-blue-100"
             >
-              <MapPin className="w-6 h-6 text-gray-900 relative z-10" />
-              <span className="text-[10px] font-semibold text-gray-900 relative z-10">Pontos</span>
+              <MapPin className="w-10 h-10 text-blue-600" strokeWidth={2} />
+              <span className="text-xs font-bold text-gray-800">Spots</span>
             </button>
+          </div>
+
+          {/* Friends Gallery Icons - Small Icons Row */}
+          <div className="mb-4 px-4">
+            <h3 className="text-sm font-bold text-gray-700 mb-2">Friends Gallery</h3>
+            <div className="flex gap-3 justify-center">
+              <button 
+                onClick={() => {
+                  const mostRecent = photoGallery.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                  setSelectedPhoto(mostRecent);
+                }}
+                className="w-16 h-16 bg-white rounded-xl shadow-md overflow-hidden border-2 border-gray-100 hover:scale-105 transition-all relative"
+              >
+                {photoGallery.length > 0 && (
+                  <>
+                    <img 
+                      src={photoGallery.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].url}
+                      alt="Most recent"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                      <Image className="w-6 h-6 text-white drop-shadow-lg" />
+                    </div>
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={() => setActiveTab('subscription')}
+                className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
+              >
+                <Trophy className="w-7 h-7 text-amber-500" />
+              </button>
+              <button 
+                className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
+              >
+                <Users className="w-7 h-7 text-blue-600" />
+              </button>
+            </div>
+          </div>
+
+          {/* Photo Gallery - Grid Layout */}
+          <div className="mb-4 px-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold text-gray-700">Gallery</h3>
+              <button 
+                onClick={() => setShowAIScanner(true)}
+                className="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1"
+              >
+                <Scan className="w-4 h-4" />
+                AI Scan
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {photoGallery.map((photo) => (
+                <div 
+                  key={photo.id} 
+                  onClick={() => setSelectedPhoto(photo)}
+                  className="relative rounded-xl overflow-hidden shadow-md hover:scale-105 transition-transform cursor-pointer aspect-square"
+                >
+                  <img 
+                    src={photo.url} 
+                    alt={`Catch ${photo.catchId}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1">
+                    <p className="text-white text-[9px] font-semibold">{new Date(photo.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Weather Card - Fixed at Bottom */}
@@ -1174,6 +1350,291 @@ function App() {
         </div>
       )}
 
+      {/* Championships Tab */}
+      {activeTab === 'championships' && (
+        <div className="pb-20 max-w-2xl mx-auto p-4">
+          <div className="bg-gradient-to-r from-green-600 to-emerald-700 text-white p-6 rounded-b-3xl shadow-lg">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Trophy className="w-7 h-7" />
+              Campeonatos Presenciais
+            </h1>
+            <p className="text-green-100 text-sm mt-1">Inscreva-se em torneios e competições</p>
+          </div>
+
+          <div className="space-y-4 mt-4">
+            {championships.map((championship) => (
+              <div key={championship.id} className="bg-white rounded-xl p-5 shadow-md">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-800 mb-1">{championship.name}</h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                      <MapPin className="w-4 h-4" />
+                      <span>{championship.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(championship.date).toLocaleDateString('pt-BR', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    championship.status === 'open' ? 'bg-green-100 text-green-700' :
+                    championship.status === 'ongoing' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {championship.status === 'open' ? '🟢 Aberto' : championship.status === 'ongoing' ? '🔵 Em Andamento' : '🔴 Fechado'}
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-3 mb-3">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <Trophy className="w-5 h-5" />
+                    <span className="font-bold">Prêmio: {championship.prize}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm text-gray-600">
+                    <Users className="w-4 h-4 inline mr-1" />
+                    <span className="font-semibold">{championship.participants}/{championship.maxParticipants}</span> participantes
+                  </div>
+                  <div className="w-full max-w-[200px] bg-gray-200 rounded-full h-2 ml-3">
+                    <div 
+                      className="bg-green-600 h-2 rounded-full transition-all"
+                      style={{ width: `${(championship.participants / championship.maxParticipants) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {championship.status === 'open' && (
+                  <button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md">
+                    Inscrever-se Agora
+                  </button>
+                )}
+                {championship.status === 'ongoing' && (
+                  <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md">
+                    Ver Resultados ao Vivo
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sponsors Tab */}
+      {activeTab === 'sponsors' && (
+        <div className="pb-20 max-w-2xl mx-auto p-4">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-6 rounded-b-3xl shadow-lg">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Award className="w-7 h-7" />
+              Patrocinadores & Parceiros
+            </h1>
+            <p className="text-indigo-100 text-sm mt-1">Descontos exclusivos e parcerias</p>
+          </div>
+
+          <div className="space-y-3 mt-4">
+            {sponsors.map((sponsor) => (
+              <div key={sponsor.id} className="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center text-4xl flex-shrink-0">
+                    {sponsor.logo}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-bold text-gray-800">{sponsor.name}</h3>
+                      {sponsor.discount && (
+                        <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                          {sponsor.discount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                        sponsor.type === 'store' ? 'bg-blue-100 text-blue-700' :
+                        sponsor.type === 'factory' ? 'bg-purple-100 text-purple-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {sponsor.type === 'store' ? '🏪 Loja' : sponsor.type === 'factory' ? '🏭 Fábrica' : '🏆 Prêmios'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">{sponsor.description}</p>
+                    <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                      Ver Ofertas
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Subscription Tab */}
+      {activeTab === 'subscription' && (
+        <div className="pb-20 max-w-2xl mx-auto p-4">
+          <div className="bg-gradient-to-r from-pink-600 to-rose-700 text-white p-6 rounded-b-3xl shadow-lg">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Award className="w-7 h-7" />
+              Assinatura Premium
+            </h1>
+            <p className="text-pink-100 text-sm mt-1">Desbloqueie recursos e benefícios exclusivos</p>
+          </div>
+
+          <div className="space-y-4 mt-4">
+            {subscriptionPlans.map((plan) => (
+              <div 
+                key={plan.id} 
+                className={`bg-white rounded-xl p-5 shadow-md relative ${
+                  plan.popular ? 'ring-2 ring-pink-500' : ''
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg">
+                      ⭐ MAIS POPULAR
+                    </span>
+                  </div>
+                )}
+                
+                <div className="text-center mb-4 mt-2">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">{plan.name}</h3>
+                  <div className="text-3xl font-bold text-pink-600 mb-1">{plan.price}</div>
+                </div>
+
+                <div className="space-y-3 mb-5">
+                  {plan.features.map((feature, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-green-600 text-xs">✓</span>
+                      </div>
+                      <span className="text-sm text-gray-700">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button className={`w-full py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md ${
+                  plan.popular 
+                    ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white'
+                    : plan.name === 'Free'
+                    ? 'bg-gray-200 text-gray-700'
+                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white'
+                }`}>
+                  {plan.name === 'Free' ? 'Plano Atual' : 'Assinar Agora'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Photo Zoom Modal */}
+      {selectedPhoto && (
+        <div 
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" 
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute -top-12 right-0 text-white text-4xl hover:text-gray-300 transition-colors"
+            >
+              ×
+            </button>
+            <img 
+              src={selectedPhoto.url} 
+              alt={`Catch ${selectedPhoto.catchId}`}
+              className="w-full h-auto rounded-2xl shadow-2xl"
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-2xl">
+              <p className="text-white text-lg font-bold">
+                {new Date(selectedPhoto.date).toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
+              <p className="text-gray-300 text-sm mt-1">Catch ID: #{selectedPhoto.catchId}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Scanner Modal */}
+      {showAIScanner && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowAIScanner(false)}>
+          <div className="bg-white rounded-3xl max-w-md w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <Scan className="w-6 h-6 text-purple-600" />
+                AI Fish Scanner
+              </h2>
+              <button
+                onClick={() => setShowAIScanner(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <div className="relative bg-gradient-to-br from-purple-100 to-indigo-100 rounded-2xl p-8 border-2 border-dashed border-purple-300 hover:border-purple-500 transition-colors cursor-pointer">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setTimeout(() => {
+                        alert('AI Identified: Bass (Largemouth)\nConfidence: 94%\nWeight estimate: 2.3 kg\nLength estimate: 45 cm');
+                        setShowAIScanner(false);
+                      }, 1500);
+                    }
+                  }}
+                />
+                <div className="text-center">
+                  <Camera className="w-16 h-16 text-purple-600 mx-auto mb-3" />
+                  <p className="text-gray-700 font-semibold mb-1">Take or Upload Photo</p>
+                  <p className="text-sm text-gray-500">AI will identify the fish species</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 mb-4">
+              <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <span>🤖</span>
+                How it works
+              </h3>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• Take a clear photo of the fish</li>
+                <li>• AI analyzes species, size, and weight</li>
+                <li>• Auto-fills catch registration form</li>
+                <li>• 95%+ accuracy on common species</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAIScanner(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  document.querySelector<HTMLInputElement>('input[type="file"]')?.click();
+                }}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Camera className="w-5 h-5" />
+                Open Camera
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddCatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
@@ -1280,10 +1741,10 @@ function App() {
           borderColor: "hsl(210 20% 20%)"
         }}
       >
-        <div className="flex items-center justify-around px-2 py-2 max-w-lg mx-auto">
+        <div className="flex items-center justify-around px-1 py-2 max-w-lg mx-auto">
           <button
             onClick={() => setActiveTab('home')}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors"
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
             style={{ 
               color: activeTab === 'home' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
@@ -1293,7 +1754,7 @@ function App() {
           </button>
           <button
             onClick={() => setActiveTab('spots')}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors"
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
             style={{ 
               color: activeTab === 'spots' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
@@ -1303,7 +1764,7 @@ function App() {
           </button>
           <button
             onClick={() => setShowAddCatch(true)}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors"
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
             style={{ color: 'hsl(210 15% 55%)' }}
           >
             <Plus className="w-5 h-5" />
@@ -1311,7 +1772,7 @@ function App() {
           </button>
           <button
             onClick={() => setActiveTab('catches')}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors"
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
             style={{ 
               color: activeTab === 'catches' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
@@ -1320,14 +1781,24 @@ function App() {
             <span className="text-[10px] font-medium">Capturas</span>
           </button>
           <button
-            onClick={() => setActiveTab('stats')}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors"
+            onClick={() => setActiveTab('championships')}
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
             style={{ 
-              color: activeTab === 'stats' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+              color: activeTab === 'championships' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
           >
-            <TrendingUp className={`w-5 h-5 ${activeTab === 'stats' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[10px] font-medium">Perfil</span>
+            <Trophy className={`w-5 h-5 ${activeTab === 'championships' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <span className="text-[10px] font-medium">Campeonatos</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('sponsors')}
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
+            style={{ 
+              color: activeTab === 'sponsors' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+            }}
+          >
+            <Award className={`w-5 h-5 ${activeTab === 'sponsors' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <span className="text-[10px] font-medium">Patrocínios</span>
           </button>
         </div>
       </nav>
