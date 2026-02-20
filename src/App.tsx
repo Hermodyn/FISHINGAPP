@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Waves, Wind, Sunrise, Sunset, Moon, Droplets, Gauge, Anchor, Activity, Map, Wrench, Worm, Timer, Target, Leaf, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Image, Info } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Image, Info } from 'lucide-react'
 import './App.css'
 
 interface Catch {
