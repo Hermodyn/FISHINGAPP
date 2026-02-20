@@ -272,7 +272,7 @@ function App() {
       />
       
       {activeTab === 'home' && (
-        <div className="max-w-lg mx-auto relative z-10">
+        <div className="max-w-lg mx-auto relative z-10" style={{ padding: '5mm' }}>
           {/* Hero Section - Compact */}
           <div className="flex justify-between items-start mb-2">
             <div>
@@ -286,19 +286,16 @@ function App() {
             </div>
             
             {/* Tips Button */}
-            <div className="relative tips-container" style={{ margin: '2mm' }}>
+            <div className="relative tips-container">
               <button
                 onClick={() => setShowTips(!showTips)}
-                className="px-4 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 shadow-md"
+                className="w-10 h-10 rounded-full transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
                 style={{
-                  background: "hsl(50 100% 85%)",
-                  fontFamily: "'Comic Sans MS', cursive",
-                  color: "hsl(210 80% 45%)",
-                  fontSize: "14px",
-                  fontWeight: "bold"
+                  background: "transparent",
+                  color: "hsl(210 80% 45%)"
                 }}
               >
-                Tips
+                <Info className="w-6 h-6" strokeWidth={2.5} />
               </button>
               
               {/* Tips Dropdown Menu */}
@@ -387,7 +384,7 @@ function App() {
           </div>
 
           {/* Main Action Buttons - Large Square Buttons */}
-          <div className="grid grid-cols-3 gap-3 mb-4 px-4">
+          <div className="grid grid-cols-3 gap-3 mb-4">
             <button
               onClick={() => setShowAddCatch(true)}
               className="aspect-square bg-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border-2 border-blue-100"
@@ -414,7 +411,7 @@ function App() {
           </div>
 
           {/* Friends Gallery Icons - Small Icons Row */}
-          <div className="mb-4 px-4">
+          <div className="mb-4">
             <h3 className="text-sm font-bold text-gray-700 mb-2">Friends Gallery</h3>
             <div className="flex gap-3 justify-center">
               <button 
@@ -438,7 +435,7 @@ function App() {
                 )}
               </button>
               <button 
-                onClick={() => setActiveTab('subscription')}
+                onClick={() => setActiveTab('leagues')}
                 className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
               >
                 <Trophy className="w-7 h-7 text-amber-500" />
@@ -452,7 +449,7 @@ function App() {
           </div>
 
           {/* Photo Gallery - Grid Layout */}
-          <div className="mb-4 px-4">
+          <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-bold text-gray-700">Gallery</h3>
               <button 
@@ -484,7 +481,7 @@ function App() {
           </div>
 
           {/* Weather Card - Fixed at Bottom */}
-          <div className="fixed bottom-[calc(4rem+3mm)] left-0 right-0 px-5 z-20">
+          <div className="fixed bottom-[calc(4rem+5mm)] left-0 right-0 z-20" style={{ padding: '0 5mm' }}>
             <div 
               className="max-w-lg mx-auto rounded-2xl border-2 p-4"
               style={{ 
