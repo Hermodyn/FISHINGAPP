@@ -88,12 +88,13 @@ interface SubscriptionPlan {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription' | 'community' | 'leagues'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [showTips, setShowTips] = useState(false)
   const [showAIScanner, setShowAIScanner] = useState(false)
   const [selectedLeague, setSelectedLeague] = useState<'friends' | 'weight'>('friends')
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoGallery | null>(null)
+  const [showFriendsGallery, setShowFriendsGallery] = useState(false)
   const [catches, setCatches] = useState<Catch[]>([
     {
       id: 1,
@@ -118,9 +119,14 @@ function App() {
   ])
 
   const [spots] = useState<FishingSpot[]>([
-    { id: 1, name: 'Lagoa da Conceição', catches: 15, rating: 4.5, distance: 2.3, latitude: -27.5969, longitude: -48.4519 },
-    { id: 2, name: 'Praia da Armação', catches: 12, rating: 4.2, distance: 5.8, latitude: -27.7461, longitude: -48.5008 },
-    { id: 3, name: 'Barra da Lagoa', catches: 8, rating: 4.0, distance: 8.1, latitude: -27.5742, longitude: -48.4217 }
+    { id: 1, name: 'Pesqueiro Maeda', catches: 45, rating: 4.8, distance: 12.5, latitude: -23.4892, longitude: -46.5731 },
+    { id: 2, name: 'Represa Billings', catches: 38, rating: 4.6, distance: 15.2, latitude: -23.7833, longitude: -46.5667 },
+    { id: 3, name: 'Represa Guarapiranga', catches: 32, rating: 4.5, distance: 18.3, latitude: -23.7167, longitude: -46.7333 },
+    { id: 4, name: 'Lago do Taboão', catches: 28, rating: 4.4, distance: 22.1, latitude: -23.6167, longitude: -46.7833 },
+    { id: 5, name: 'Pesqueiro Taquari', catches: 25, rating: 4.7, distance: 25.8, latitude: -23.5500, longitude: -46.6333 },
+    { id: 6, name: 'Represa de Ponte Nova', catches: 22, rating: 4.3, distance: 28.5, latitude: -23.4833, longitude: -46.4167 },
+    { id: 7, name: 'Pesqueiro Rancho Alegre', catches: 20, rating: 4.5, distance: 31.2, latitude: -23.5167, longitude: -46.8500 },
+    { id: 8, name: 'Lago Parque Ibirapuera', catches: 18, rating: 4.2, distance: 8.7, latitude: -23.5875, longitude: -46.6575 }
   ])
 
   const [weather] = useState<MarineWeather>({
@@ -441,6 +447,7 @@ function App() {
                 <Trophy className="w-7 h-7 text-amber-500" />
               </button>
               <button 
+                onClick={() => setShowFriendsGallery(true)}
                 className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
               >
                 <Users className="w-7 h-7 text-blue-600" />
@@ -747,6 +754,166 @@ function App() {
                     </div>
                   )
                 })}
+              </div>
+            </div>
+
+            {/* Subscription Plans Section */}
+            <div className="mt-6">
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-4 rounded-t-2xl">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Users className="w-6 h-6" />
+                  Planos de Assinatura
+                </h3>
+                <p className="text-purple-100 text-sm mt-1">Escolha o plano ideal para você</p>
+              </div>
+              
+              <div className="space-y-3 mt-3">
+                {subscriptionPlans.map((plan) => (
+                  <div 
+                    key={plan.id} 
+                    className={`bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-shadow ${
+                      plan.popular ? 'ring-2 ring-purple-500 relative' : ''
+                    }`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                        <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
+                          ⭐ MAIS POPULAR
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="text-xl font-bold text-gray-800">{plan.name}</h4>
+                        <p className="text-2xl font-bold text-purple-600 mt-1">{plan.price}</p>
+                      </div>
+                      {plan.popular && (
+                        <Trophy className="w-8 h-8 text-amber-500" />
+                      )}
+                    </div>
+                    <ul className="space-y-2 mb-4">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                          <span className="text-green-500 font-bold mt-0.5">✓</span>
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <button 
+                      className={`w-full py-3 rounded-xl font-semibold transition-all hover:scale-105 ${
+                        plan.popular 
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {plan.id === 1 ? 'Plano Atual' : 'Assinar Agora'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leagues Tab - Coming Soon */}
+      {activeTab === 'leagues' && (
+        <div className="pb-20 max-w-2xl mx-auto">
+          <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 rounded-b-3xl shadow-lg">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Trophy className="w-7 h-7" />
+              Ligas de Pesca
+            </h1>
+            <p className="text-amber-100 text-sm mt-1">Competições e rankings entre pescadores</p>
+          </div>
+
+          <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
+            <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md text-center">
+              <div className="w-24 h-24 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Trophy className="w-12 h-12 text-amber-600" />
+              </div>
+              
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">Em Breve!</h2>
+              <p className="text-gray-600 mb-6">
+                Estamos preparando as ligas de pesca para você competir com amigos e pescadores do mundo todo.
+              </p>
+
+              <div className="space-y-3 mb-6">
+                <div className="bg-amber-50 p-4 rounded-xl text-left">
+                  <h3 className="font-bold text-amber-900 mb-2 flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Liga dos Amigos
+                  </h3>
+                  <p className="text-sm text-gray-700">Compete com seus amigos pescadores e veja quem é o melhor!</p>
+                </div>
+
+                <div className="bg-orange-50 p-4 rounded-xl text-left">
+                  <h3 className="font-bold text-orange-900 mb-2 flex items-center gap-2">
+                    <Weight className="w-5 h-5" />
+                    Liga por Kg
+                  </h3>
+                  <p className="text-sm text-gray-700">Ranking baseado no peso total das suas capturas.</p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 px-6 rounded-xl font-semibold">
+                🚀 Lançamento em breve
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Community/Forum Tab - Coming Soon */}
+      {activeTab === 'community' && (
+        <div className="pb-20 max-w-2xl mx-auto">
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6 rounded-b-3xl shadow-lg">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <MessageSquare className="w-7 h-7" />
+              Fórum da Comunidade
+            </h1>
+            <p className="text-purple-100 text-sm mt-1">Compartilhe experiências e aprenda com outros pescadores</p>
+          </div>
+
+          <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
+            <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md text-center">
+              <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <MessageSquare className="w-12 h-12 text-purple-600" />
+              </div>
+              
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">Em Breve!</h2>
+              <p className="text-gray-600 mb-6">
+                Estamos criando um espaço para você compartilhar dicas, histórias e se conectar com outros pescadores.
+              </p>
+
+              <div className="space-y-3 mb-6">
+                <div className="bg-purple-50 p-4 rounded-xl text-left">
+                  <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5" />
+                    Posts e Discussões
+                  </h3>
+                  <p className="text-sm text-gray-700">Compartilhe suas experiências e aprenda com a comunidade.</p>
+                </div>
+
+                <div className="bg-indigo-50 p-4 rounded-xl text-left">
+                  <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Conecte-se
+                  </h3>
+                  <p className="text-sm text-gray-700">Faça amizade com pescadores da sua região e marque pescarias.</p>
+                </div>
+
+                <div className="bg-purple-50 p-4 rounded-xl text-left">
+                  <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Dicas e Técnicas
+                  </h3>
+                  <p className="text-sm text-gray-700">Aprenda novas técnicas e descubra os melhores spots.</p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold">
+                🚀 Lançamento em breve
               </div>
             </div>
           </div>
@@ -1524,6 +1691,93 @@ function App() {
         </div>
       )}
 
+      {/* Friends Gallery Modal */}
+      {showFriendsGallery && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowFriendsGallery(false)}>
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-t-3xl z-10">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Users className="w-7 h-7" />
+                    Galeria dos Amigos
+                  </h2>
+                  <p className="text-blue-100 text-sm mt-1">Fotos de capturas dos pescadores conectados</p>
+                </div>
+                <button
+                  onClick={() => setShowFriendsGallery(false)}
+                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                >
+                  <span className="text-2xl leading-none">×</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Friend 1 - John Fisher */}
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    JF
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800">John Fisher</h3>
+                    <p className="text-sm text-gray-500">12 fotos • Conectado há 3 meses</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                  <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                  <img src="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                </div>
+              </div>
+
+              {/* Friend 2 - Mike Waters */}
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    MW
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800">Mike Waters</h3>
+                    <p className="text-sm text-gray-500">8 fotos • Conectado há 2 meses</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <img src="https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                  <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                  <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                </div>
+              </div>
+
+              {/* Friend 3 - Sarah Ocean */}
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    SO
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800">Sarah Ocean</h3>
+                    <p className="text-sm text-gray-500">15 fotos • Conectado há 5 meses</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <img src="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                  <img src="https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                  <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                </div>
+              </div>
+
+              {/* Add Friends Button */}
+              <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2">
+                <Users className="w-5 h-5" />
+                Adicionar Mais Amigos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Photo Zoom Modal */}
       {selectedPhoto && (
         <div 
@@ -1741,61 +1995,53 @@ function App() {
         <div className="flex items-center justify-around px-1 py-2 max-w-lg mx-auto">
           <button
             onClick={() => setActiveTab('home')}
-            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
+            className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{ 
               color: activeTab === 'home' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
           >
             <Anchor className={`w-5 h-5 ${activeTab === 'home' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[10px] font-medium">Início</span>
+            <span className="text-[9px] font-medium">Início</span>
           </button>
           <button
-            onClick={() => setActiveTab('spots')}
-            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
+            onClick={() => setActiveTab('leagues')}
+            className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{ 
-              color: activeTab === 'spots' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+              color: activeTab === 'leagues' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
           >
-            <MapPin className={`w-5 h-5 ${activeTab === 'spots' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[10px] font-medium">Pontos</span>
-          </button>
-          <button
-            onClick={() => setShowAddCatch(true)}
-            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
-            style={{ color: 'hsl(210 15% 55%)' }}
-          >
-            <Plus className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Registrar</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('catches')}
-            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
-            style={{ 
-              color: activeTab === 'catches' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
-            }}
-          >
-            <Fish className={`w-5 h-5 ${activeTab === 'catches' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[10px] font-medium">Capturas</span>
+            <Trophy className={`w-5 h-5 ${activeTab === 'leagues' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <span className="text-[9px] font-medium">Ligas</span>
           </button>
           <button
             onClick={() => setActiveTab('championships')}
-            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
+            className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{ 
               color: activeTab === 'championships' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
           >
-            <Trophy className={`w-5 h-5 ${activeTab === 'championships' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[10px] font-medium">Campeonatos</span>
+            <Award className={`w-5 h-5 ${activeTab === 'championships' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <span className="text-[9px] font-medium">Torneios</span>
           </button>
           <button
             onClick={() => setActiveTab('sponsors')}
-            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors"
+            className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{ 
               color: activeTab === 'sponsors' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
           >
-            <Award className={`w-5 h-5 ${activeTab === 'sponsors' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[10px] font-medium">Patrocínios</span>
+            <Users className={`w-5 h-5 ${activeTab === 'sponsors' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <span className="text-[9px] font-medium">Parceiros</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('community')}
+            className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
+            style={{ 
+              color: activeTab === 'community' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+            }}
+          >
+            <MessageSquare className={`w-5 h-5 ${activeTab === 'community' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <span className="text-[9px] font-medium">Fórum</span>
           </button>
         </div>
       </nav>
