@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Image, Info, Wrench, Target } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Image, Info, Wrench, Target, ChevronLeft, ChevronRight } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -38,8 +38,10 @@ interface MarineWeather {
 interface PhotoGallery {
   id: number
   url: string
-  catchId: number
+  catchId?: number
   date: string
+  weight?: number
+  friendName?: string
 }
 
 interface Championship {
@@ -123,6 +125,7 @@ function App() {
   const [showTips, setShowTips] = useState(false)
   const [showAIScanner, setShowAIScanner] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoGallery | null>(null)
+  const [galleryMode, setGalleryMode] = useState<'mine' | 'friends'>('mine')
 
   const [registerLoading, setRegisterLoading] = useState(false)
   const [registerError, setRegisterError] = useState<string | null>(null)
@@ -330,12 +333,98 @@ function App() {
 
   // V2.0 - Photo Gallery Data
   const [photoGallery] = useState<PhotoGallery[]>([
-    { id: 1, url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400', catchId: 1, date: '2026-02-15' },
-    { id: 2, url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400', catchId: 2, date: '2026-02-14' },
-    { id: 3, url: 'https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=400', catchId: 1, date: '2026-02-13' },
-    { id: 4, url: 'https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=400', catchId: 3, date: '2026-02-12' }
+    { id: 1, url: '/home-gallery/ayoub-allaoui-r4UnstvRgkE-unsplash.jpg', catchId: 1, date: '2026-02-15' },
+    { id: 2, url: '/home-gallery/cast-spear-hApQr0GDDP8-unsplash.jpg', catchId: 2, date: '2026-02-14' },
+    { id: 3, url: '/home-gallery/clay-knight-Gn5i7ZWw00I-unsplash.jpg', catchId: 1, date: '2026-02-13' },
+    { id: 4, url: '/home-gallery/diego-rubilar-NwEUY1xts1U-unsplash.jpg', catchId: 3, date: '2026-02-12' },
+    { id: 5, url: '/home-gallery/drew-farwell-0C20qeLQwi8-unsplash.jpg', catchId: 2, date: '2026-02-11' },
+    { id: 6, url: '/home-gallery/jack-murrey-SIj8yWcxC0k-unsplash.jpg', catchId: 3, date: '2026-02-10' },
+    { id: 7, url: '/home-gallery/jeff-vanderspank-8jh4zljhyDg-unsplash.jpg', catchId: 1, date: '2026-02-09' },
+    { id: 8, url: '/home-gallery/jp-popham-BEK8qXGzF4A-unsplash.jpg', catchId: 2, date: '2026-02-08' },
+    { id: 9, url: '/home-gallery/luis-arias-WnqewLN8Suk-unsplash.jpg', catchId: 3, date: '2026-02-07' },
+    { id: 10, url: '/home-gallery/mael-balland-0asA95b8yzM-unsplash.jpg', catchId: 1, date: '2026-02-06' },
+    { id: 11, url: '/home-gallery/michael-yero-AHrsj0zlN-E-unsplash.jpg', catchId: 2, date: '2026-02-05' },
+    { id: 12, url: '/home-gallery/natali-martynova-akd9GO5srJ8-unsplash.jpg', catchId: 3, date: '2026-02-04' }
   ])
 
+  const top3CatchIdsByWeight = useMemo(() => {
+    return catches
+      .slice()
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, 3)
+      .map((c) => c.id)
+  }, [catches])
+
+  const mineGalleryPhotos = useMemo(() => {
+    const real = catches
+      .filter((c) => typeof c.photoUrl === 'string' && c.photoUrl.length > 0)
+      .map((c) => {
+        const dateTime = c.time ? `${c.date}T${c.time}:00` : c.date
+        return {
+          id: c.id,
+          url: c.photoUrl as string,
+          catchId: c.id,
+          date: dateTime,
+          weight: c.weight
+        } satisfies PhotoGallery
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    const fallback = photoGallery
+      .slice()
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .map((p) => {
+        const match = typeof p.catchId === 'number' ? catches.find((c) => c.id === p.catchId) : undefined
+        return {
+          ...p,
+          weight: match?.weight
+        }
+      })
+
+    const realCatchIds = new Set(real.map((p) => p.catchId).filter((v): v is number => typeof v === 'number'))
+    const combined = [...real, ...fallback.filter((p) => (typeof p.catchId === 'number' ? !realCatchIds.has(p.catchId) : true))]
+
+    return combined
+  }, [catches, photoGallery])
+
+  const friendsGalleryPhotos = useMemo(() => {
+    const mock = [
+      { id: 101, url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=500', date: '2026-02-16', weight: 4.8, friendName: 'John Fisher' },
+      { id: 102, url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500', date: '2026-02-15', weight: 2.1, friendName: 'Mike Waters' },
+      { id: 103, url: 'https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=500', date: '2026-02-14', weight: 3.3, friendName: 'Sarah Ocean' },
+      { id: 104, url: 'https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=500', date: '2026-02-13', weight: 1.9, friendName: 'John Fisher' },
+      { id: 105, url: 'https://images.unsplash.com/photo-1520975869010-9391a1f7f95b?w=500', date: '2026-02-12', weight: 5.2, friendName: 'Mike Waters' },
+      { id: 106, url: 'https://source.unsplash.com/tERfQLmWFvQ/800x1000', date: '2026-02-11', weight: 2.7, friendName: 'Sarah Ocean' },
+      { id: 107, url: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=500', date: '2026-02-10', weight: 3.9, friendName: 'John Fisher' },
+      { id: 108, url: 'https://source.unsplash.com/VBi_S5K9dsM/800x1000', date: '2026-02-09', weight: 1.4, friendName: 'Mike Waters' },
+      { id: 109, url: 'https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=500', date: '2026-02-08', weight: 6.0, friendName: 'Sarah Ocean' },
+      { id: 110, url: 'https://source.unsplash.com/zBORpP97apw/800x1000', date: '2026-02-07', weight: 2.9, friendName: 'John Fisher' },
+      { id: 111, url: 'https://source.unsplash.com/_NiWN9itkC4/800x1000', date: '2026-02-06', weight: 4.1, friendName: 'Mike Waters' },
+      { id: 112, url: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?w=500', date: '2026-02-05', weight: 2.2, friendName: 'Sarah Ocean' }
+    ]
+
+    return mock.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [])
+
+  const friendsTop3PhotoIdsByWeight = useMemo(() => {
+    return friendsGalleryPhotos
+      .slice()
+      .sort((a, b) => (b.weight || 0) - (a.weight || 0))
+      .slice(0, 3)
+      .map((p) => p.id)
+  }, [friendsGalleryPhotos])
+
+  const zoomGalleryPhotos = useMemo(() => {
+    if (activeTab === 'friendsGallery') {
+      return galleryMode === 'friends' ? friendsGalleryPhotos : mineGalleryPhotos
+    }
+    return mineGalleryPhotos
+  }, [activeTab, friendsGalleryPhotos, galleryMode, mineGalleryPhotos])
+
+  const selectedZoomIndex = useMemo(() => {
+    if (!selectedPhoto) return -1
+    return zoomGalleryPhotos.findIndex((p) => p.id === selectedPhoto.id)
+  }, [selectedPhoto, zoomGalleryPhotos])
 
   // Championships Data
   const [championships] = useState<Championship[]>([
@@ -936,23 +1025,34 @@ function App() {
                 AI Scan
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {photoGallery.map((photo) => (
-                <div 
-                  key={photo.id} 
-                  onClick={() => setSelectedPhoto(photo)}
-                  className="relative rounded-xl overflow-hidden shadow-md hover:scale-105 transition-transform cursor-pointer aspect-square"
-                >
-                  <img 
-                    src={photo.url} 
-                    alt={`Catch ${photo.catchId}`}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1">
-                    <p className="text-white text-[9px] font-semibold">{new Date(photo.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+            <div className="grid grid-cols-3" style={{ gap: '0.5mm' }}>
+              {mineGalleryPhotos.map((photo) => {
+                const weight = typeof photo.weight === 'number' ? photo.weight : undefined
+                const catchId = 'catchId' in photo ? photo.catchId : undefined
+                const rankMine = typeof catchId === 'number' ? top3CatchIdsByWeight.indexOf(catchId) : -1
+
+                return (
+                  <div
+                    key={photo.id}
+                    onClick={() => setSelectedPhoto(photo)}
+                    className="relative rounded-xl overflow-hidden shadow-md hover:scale-105 transition-transform cursor-pointer aspect-[4/5]"
+                  >
+                    <img src={photo.url} alt="Foto" className="w-full h-full object-cover" />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                      <p className="text-white text-[10px] font-semibold">
+                        {typeof weight === 'number' ? `${weight} kg` : '—'}
+                      </p>
+                    </div>
+
+                    {rankMine >= 0 && (
+                      <div className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 text-white rounded-full px-2 py-0.5">
+                        <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-[10px] font-bold">{rankMine + 1}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
@@ -970,61 +1070,73 @@ function App() {
           </div>
 
           <div className="mt-4">
-            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  JF
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-800">John Fisher</h3>
-                  <p className="text-sm text-gray-500">12 fotos • Conectado há 3 meses</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                <img src="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  MW
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-800">Mike Waters</h3>
-                  <p className="text-sm text-gray-500">8 fotos • Conectado há 2 meses</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <img src="https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+            <div className="bg-white rounded-2xl shadow-md p-3">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setGalleryMode('mine')}
+                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                    galleryMode === 'mine' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Minhas fotos
+                </button>
+                <button
+                  onClick={() => setGalleryMode('friends')}
+                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                    galleryMode === 'friends' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Fotos dos amigos
+                </button>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  SO
+            <div className="mt-3 bg-white rounded-2xl shadow-md overflow-hidden">
+              <div className="max-h-[70vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="grid grid-cols-3" style={{ gap: '0.5mm' }}>
+                  {(galleryMode === 'mine' ? mineGalleryPhotos : friendsGalleryPhotos).map((photo) => {
+                  const weight = typeof photo.weight === 'number' ? photo.weight : undefined
+                  const catchId = 'catchId' in photo ? photo.catchId : undefined
+                  const rankMine = galleryMode === 'mine' && typeof catchId === 'number'
+                    ? top3CatchIdsByWeight.indexOf(catchId)
+                    : -1
+                  const rankFriends = galleryMode === 'friends'
+                    ? friendsTop3PhotoIdsByWeight.indexOf(photo.id)
+                    : -1
+                  const rank = rankMine >= 0 ? rankMine : rankFriends
+
+                    return (
+                      <div
+                        key={photo.id}
+                        onClick={() => setSelectedPhoto(photo)}
+                        className="relative aspect-square overflow-hidden bg-gray-100 cursor-pointer"
+                      >
+                        <img src={photo.url} alt="Foto" className="w-full h-full object-cover" />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                          <p className="text-white text-[10px] font-semibold">
+                            {typeof weight === 'number' ? `${weight} kg` : '—'}
+                          </p>
+                        </div>
+
+                        {rank >= 0 && (
+                          <div className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 text-white rounded-full px-2 py-0.5">
+                            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-[10px] font-bold">{rank + 1}</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-800">Sarah Ocean</h3>
-                  <p className="text-sm text-gray-500">15 fotos • Conectado há 5 meses</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <img src="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                <img src="https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
               </div>
             </div>
 
-            <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2">
-              <Users className="w-5 h-5" />
-              Adicionar Mais Amigos
-            </button>
+            {galleryMode === 'friends' && (
+              <button className="w-full mt-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2">
+                <Users className="w-5 h-5" />
+                Ver mais amigos
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -2580,6 +2692,35 @@ function App() {
             >
               ×
             </button>
+
+            {zoomGalleryPhotos.length > 1 && (
+              <>
+                <button
+                  onClick={() => {
+                    if (zoomGalleryPhotos.length === 0) return
+                    const idx = selectedZoomIndex >= 0 ? selectedZoomIndex : 0
+                    const next = (idx - 1 + zoomGalleryPhotos.length) % zoomGalleryPhotos.length
+                    setSelectedPhoto(zoomGalleryPhotos[next])
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors"
+                  aria-label="Foto anterior"
+                >
+                  <ChevronLeft className="w-7 h-7" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (zoomGalleryPhotos.length === 0) return
+                    const idx = selectedZoomIndex >= 0 ? selectedZoomIndex : 0
+                    const next = (idx + 1) % zoomGalleryPhotos.length
+                    setSelectedPhoto(zoomGalleryPhotos[next])
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors"
+                  aria-label="Próxima foto"
+                >
+                  <ChevronRight className="w-7 h-7" />
+                </button>
+              </>
+            )}
             <img 
               src={selectedPhoto.url} 
               alt={`Catch ${selectedPhoto.catchId}`}
@@ -2594,7 +2735,10 @@ function App() {
                   day: 'numeric' 
                 })}
               </p>
-              <p className="text-gray-300 text-sm mt-1">Catch ID: #{selectedPhoto.catchId}</p>
+              <p className="text-gray-300 text-sm mt-1">
+                {typeof selectedPhoto.weight === 'number' ? `${selectedPhoto.weight} kg` : '—'}
+                {selectedPhoto.friendName ? ` • ${selectedPhoto.friendName}` : selectedPhoto.catchId ? ` • Catch #${selectedPhoto.catchId}` : ''}
+              </p>
             </div>
           </div>
         </div>
