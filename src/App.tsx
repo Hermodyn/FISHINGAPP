@@ -103,6 +103,9 @@ interface League {
   category: string
   rules: string
   invitedFriendIds: number[]
+  prizePotEnabled?: boolean
+  prizePotType?: 'fictitious' | 'real'
+  entryFee?: number
   tournamentName?: string
   location?: string
   startAt?: string
@@ -145,6 +148,9 @@ function App() {
     category: '',
     rules: '',
     invitedFriendIds: [] as number[],
+    prizePotEnabled: false,
+    prizePotType: 'fictitious' as 'fictitious' | 'real',
+    entryFee: '',
     tournamentName: '',
     location: '',
     startAt: '',
@@ -159,6 +165,26 @@ function App() {
     weighingMethod: '',
     tiebreakCriteria: ''
   })
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('fishingapp.leagues.v1')
+      if (!raw) return
+      const parsed = JSON.parse(raw) as unknown
+      if (!Array.isArray(parsed)) return
+      setLeagues(parsed as League[])
+    } catch {
+      return
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('fishingapp.leagues.v1', JSON.stringify(leagues))
+    } catch {
+      return
+    }
+  }, [leagues])
   const [catches, setCatches] = useState<Catch[]>([
     {
       id: 1,
@@ -648,6 +674,9 @@ function App() {
       category: '',
       rules: '',
       invitedFriendIds: [],
+      prizePotEnabled: false,
+      prizePotType: 'fictitious',
+      entryFee: '',
       tournamentName: '',
       location: '',
       startAt: '',
@@ -690,6 +719,9 @@ function App() {
     const fallbackName = 'Torneio sem nome'
     const fallbackCategory = 'Sem categoria'
 
+    const entryFeeNumber = typeof newLeague.entryFee === 'string' && newLeague.entryFee.trim().length > 0 ? Number(newLeague.entryFee) : 0
+    const entryFee = Number.isFinite(entryFeeNumber) ? entryFeeNumber : 0
+
     if (editingLeagueId !== null) {
       setLeagues((prev) =>
         prev.map((l) =>
@@ -701,6 +733,9 @@ function App() {
                 category: newLeague.category || fallbackCategory,
                 rules: newLeague.rules,
                 invitedFriendIds: newLeague.invitedFriendIds,
+                prizePotEnabled: Boolean(newLeague.prizePotEnabled),
+                prizePotType: newLeague.prizePotType,
+                entryFee,
                 tournamentName: newLeague.tournamentName,
                 location: newLeague.location,
                 startAt: newLeague.startAt,
@@ -727,6 +762,9 @@ function App() {
       category: newLeague.category || fallbackCategory,
       rules: newLeague.rules,
       invitedFriendIds: newLeague.invitedFriendIds,
+      prizePotEnabled: Boolean(newLeague.prizePotEnabled),
+      prizePotType: newLeague.prizePotType,
+      entryFee,
       tournamentName: newLeague.tournamentName,
       location: newLeague.location,
       startAt: newLeague.startAt,
@@ -757,6 +795,9 @@ function App() {
       category: league.category || '',
       rules: league.rules || '',
       invitedFriendIds: league.invitedFriendIds || [],
+      prizePotEnabled: Boolean(league.prizePotEnabled),
+      prizePotType: league.prizePotType || 'fictitious',
+      entryFee: typeof league.entryFee === 'number' ? String(league.entryFee) : '',
       tournamentName: league.tournamentName || '',
       location: league.location || '',
       startAt: league.startAt || '',
@@ -773,6 +814,66 @@ function App() {
     })
     setShowCreateLeague(true)
   }, [leagues])
+
+  const leagueRankings = useMemo(() => {
+    const parseMs = (value?: string) => {
+      if (!value) return null
+      const ms = new Date(value).getTime()
+      return Number.isFinite(ms) ? ms : null
+    }
+
+    const getBestWeight = (weights: number[]) => {
+      if (weights.length === 0) return 0
+      return weights.reduce((best, w) => (w > best ? w : best), 0)
+    }
+
+    return leagues.reduce<Record<number, { participants: Array<{ key: string; name: string; bestWeight: number }>; potTotal: number }>>((acc, league) => {
+      const startMs = parseMs(league.startAt)
+      const endMs = parseMs(league.endAt)
+
+      const isInWindow = (dateValue: string) => {
+        const ms = new Date(dateValue).getTime()
+        if (!Number.isFinite(ms)) return false
+        if (startMs !== null && ms < startMs) return false
+        if (endMs !== null && ms > endMs) return false
+        return true
+      }
+
+      const myWeights = catches
+        .filter((c) => (startMs !== null || endMs !== null ? isInWindow(c.date) : true))
+        .map((c) => c.weight)
+        .filter((w) => typeof w === 'number' && Number.isFinite(w))
+
+      const invited = (league.invitedFriendIds || [])
+        .map((id) => friends.find((f) => f.id === id))
+        .filter((v): v is Friend => Boolean(v))
+
+      const friendEntries = invited.map((f) => {
+        const friendWeights = friendsGalleryPhotos
+          .filter((p) => p.friendName === f.name)
+          .filter((p) => (startMs !== null || endMs !== null ? isInWindow(p.date) : true))
+          .map((p) => (typeof p.weight === 'number' ? p.weight : 0))
+          .filter((w) => typeof w === 'number' && Number.isFinite(w))
+
+        return {
+          key: `friend-${f.id}`,
+          name: f.name,
+          bestWeight: getBestWeight(friendWeights)
+        }
+      })
+
+      const participants = [
+        { key: 'me', name: 'Você', bestWeight: getBestWeight(myWeights) },
+        ...friendEntries
+      ].sort((a, b) => b.bestWeight - a.bestWeight)
+
+      const fee = typeof league.entryFee === 'number' && Number.isFinite(league.entryFee) ? league.entryFee : 0
+      const potTotal = league.prizePotEnabled ? fee * participants.length : 0
+
+      acc[league.id] = { participants, potTotal }
+      return acc
+    }, {})
+  }, [catches, friends, friendsGalleryPhotos, leagues])
 
   const handleDeleteLeague = useCallback((leagueId: number) => {
     setLeagues((prev) => prev.filter((l) => l.id !== leagueId))
@@ -1715,6 +1816,37 @@ function App() {
                           )}
                         </div>
 
+                        {leagueRankings[l.id] && (
+                          <div className="mt-4 bg-gray-50 border border-gray-100 rounded-2xl p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-sm font-bold text-gray-800">Ranking (maior peixe)</div>
+                              {l.prizePotEnabled && (
+                                <div className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-1">
+                                  Caixinha: {l.prizePotType === 'real' ? 'Real' : 'Fictícia'} • Total {leagueRankings[l.id].potTotal.toFixed(2)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              {leagueRankings[l.id].participants.map((p, idx) => (
+                                <div key={p.key} className="flex items-center justify-between gap-2 bg-white rounded-xl border border-gray-100 px-3 py-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 text-amber-900 flex items-center justify-center text-xs font-bold shrink-0">
+                                      {idx + 1}
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-800 truncate">{p.name}</div>
+                                  </div>
+                                  <div className="text-sm font-bold text-gray-900 whitespace-nowrap">{p.bestWeight.toFixed(1)} kg</div>
+                                </div>
+                              ))}
+                            </div>
+                            {(l.startAt || l.endAt) && (
+                              <div className="mt-2 text-[11px] text-gray-600">
+                                Prazo: {l.startAt ? new Date(l.startAt).toLocaleString('pt-BR') : '—'} até {l.endAt ? new Date(l.endAt).toLocaleString('pt-BR') : '—'}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         <div className="mt-4 flex items-center gap-2">
                           <button
                             onClick={() => handleEditLeague(l.id)}
@@ -1879,6 +2011,52 @@ function App() {
                     onChange={(e) => setNewLeague({ ...newLeague, tiebreakCriteria: e.target.value })}
                     className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                   />
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-xl p-3">
+                <div className="text-sm font-bold text-gray-800 mb-2">Caixinha/premiação</div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(newLeague.prizePotEnabled)}
+                      onChange={(e) => setNewLeague({ ...newLeague, prizePotEnabled: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    Ativar caixinha
+                  </label>
+
+                  {newLeague.prizePotEnabled && (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={newLeague.prizePotType}
+                          onChange={(e) => setNewLeague({ ...newLeague, prizePotType: e.target.value as 'fictitious' | 'real' })}
+                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                        >
+                          <option value="fictitious">Fictício</option>
+                          <option value="real">Real</option>
+                        </select>
+                        <input
+                          inputMode="decimal"
+                          placeholder="Valor de entrada"
+                          value={newLeague.entryFee}
+                          onChange={(e) => setNewLeague({ ...newLeague, entryFee: e.target.value })}
+                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                        />
+                      </div>
+                      <div className="text-[11px] text-gray-600">
+                        Total arrecadado estimado = entrada × participantes ({(() => {
+                          const entryFee = typeof newLeague.entryFee === 'string' && newLeague.entryFee.trim().length > 0 ? Number(newLeague.entryFee) : 0
+                          const participants = 1 + newLeague.invitedFriendIds.length
+                          const safeFee = Number.isFinite(entryFee) ? entryFee : 0
+                          const total = safeFee * participants
+                          return `${total.toFixed(2)}`
+                        })()})
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
