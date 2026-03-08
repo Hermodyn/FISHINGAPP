@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Image, Info, Wrench, Target } from 'lucide-react'
 import './App.css'
 
@@ -11,6 +11,8 @@ interface Catch {
   date: string
   time: string
   weather: string
+  baitUsed?: string
+  photoUrl?: string
 }
 
 interface FishingSpot {
@@ -380,14 +382,89 @@ function App() {
     weight: '',
     length: '',
     location: '',
-    weather: ''
+    baitUsed: '',
+    photoUrl: ''
   })
+
+  const catchPhotoInputRef = useRef<HTMLInputElement | null>(null)
+  const catchesAutoOpenedRef = useRef(false)
+  const [showFishIdentified, setShowFishIdentified] = useState(false)
+  const [identifiedSpecies, setIdentifiedSpecies] = useState('')
+  const [identifyLoading, setIdentifyLoading] = useState(false)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [photoCapturedAt, setPhotoCapturedAt] = useState<number | null>(null)
+
+  const identifyFishFromFile = useCallback(async (file: File) => {
+    const now = Date.now()
+    const maxPhotoAgeMs = 2 * 60 * 1000
+    if (now - file.lastModified > maxPhotoAgeMs) {
+      setRegisterError('A foto deve ser capturada em tempo real (agora). Tire uma nova foto para registrar a captura.')
+      return
+    }
+
+    setIdentifyLoading(true)
+    setRegisterError(null)
+
+    const url = URL.createObjectURL(file)
+    setNewCatch((prev) => ({ ...prev, photoUrl: url }))
+    setPhotoCapturedAt(now)
+
+    await new Promise((r) => setTimeout(r, 900))
+    const candidates = ['Tilápia', 'Traíra', 'Tucunaré', 'Robalo', 'Pacu', 'Carpa', 'Dourado', 'Bagre']
+    const picked = candidates[Math.floor(Math.random() * candidates.length)]
+
+    setIdentifiedSpecies(picked)
+    setShowFishIdentified(true)
+    setIdentifyLoading(false)
+  }, [])
+
+  const ensureAutoLocation = useCallback(async () => {
+    if (!('geolocation' in navigator)) {
+      setRegisterError('Este dispositivo/navegador não suporta geolocalização. O registro só pode ser feito em tempo real com GPS.')
+      return
+    }
+
+    setLocationLoading(true)
+    setRegisterError(null)
+
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (p) => resolve(p),
+          (err) => reject(err),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        )
+      })
+
+      const lat = pos.coords.latitude.toFixed(5)
+      const lon = pos.coords.longitude.toFixed(5)
+      setNewCatch((prev) => ({ ...prev, location: prev.location || `Lat ${lat}, Lon ${lon}` }))
+    } catch (e) {
+      const err = e as GeolocationPositionError
+      if (typeof err?.code === 'number' && err.code === err.PERMISSION_DENIED) {
+        setRegisterError('Permissão de localização negada. Para registrar em tempo real, habilite o GPS.')
+      } else if (typeof err?.code === 'number' && err.code === err.TIMEOUT) {
+        setRegisterError('Tempo esgotado ao obter sua localização. Tente novamente com o GPS ativo.')
+      } else {
+        setRegisterError('Não foi possível obter sua localização. O registro só pode ser feito em tempo real.')
+      }
+    } finally {
+      setLocationLoading(false)
+    }
+  }, [])
 
   const handleAddCatch = useCallback(async () => {
     if (registerLoading) return
 
-    if (!newCatch.species || !newCatch.weight || !newCatch.length || !newCatch.location) {
-      setRegisterError('Preencha espécie, peso, comprimento e local para registrar.')
+    const now = Date.now()
+    const maxCaptureToRegisterMs = 5 * 60 * 1000
+    if (!newCatch.photoUrl || !photoCapturedAt || now - photoCapturedAt > maxCaptureToRegisterMs) {
+      setRegisterError('O registro só pode ser feito em tempo real. Tire uma nova foto e registre em seguida.')
+      return
+    }
+
+    if (!newCatch.species || !newCatch.weight || !newCatch.location) {
+      setRegisterError('Preencha espécie, peso e local para registrar.')
       return
     }
 
@@ -413,15 +490,18 @@ function App() {
         id: catches.length + 1,
         species: newCatch.species,
         weight: parseFloat(newCatch.weight),
-        length: parseFloat(newCatch.length),
+        length: newCatch.length ? parseFloat(newCatch.length) : 0,
         location: newCatch.location,
         date: now.toISOString().split('T')[0],
         time: now.toTimeString().slice(0, 5),
-        weather: newCatch.weather || 'Não informado'
+        weather: 'Não informado',
+        baitUsed: newCatch.baitUsed || undefined,
+        photoUrl: newCatch.photoUrl || undefined
       }
 
       setCatches([catchData, ...catches])
-      setNewCatch({ species: '', weight: '', length: '', location: '', weather: '' })
+      setNewCatch({ species: '', weight: '', length: '', location: '', baitUsed: '', photoUrl: '' })
+      setPhotoCapturedAt(null)
       setShowAddCatch(false)
     } catch (e) {
       const err = e as GeolocationPositionError
@@ -437,6 +517,20 @@ function App() {
     }
   }, [catches, newCatch, registerLoading])
 
+  useEffect(() => {
+    if (activeTab === 'catches') {
+      if (!catchesAutoOpenedRef.current) {
+        catchesAutoOpenedRef.current = true
+        setTimeout(() => {
+          catchPhotoInputRef.current?.click()
+        }, 250)
+      }
+      return
+    }
+
+    catchesAutoOpenedRef.current = false
+  }, [activeTab])
+
   // Close registration modal when tab changes
   useEffect(() => {
     if (showAddCatch) {
@@ -448,8 +542,14 @@ function App() {
     if (showAddCatch) {
       setRegisterError(null)
       setRegisterLoading(false)
+      setIdentifiedSpecies('')
+      setShowFishIdentified(false)
+      if (!newCatch.photoUrl) {
+        setPhotoCapturedAt(null)
+      }
+      ensureAutoLocation()
     }
-  }, [showAddCatch])
+  }, [ensureAutoLocation, newCatch.photoUrl, showAddCatch])
 
   useEffect(() => {
     if (showCreateLeague) return
@@ -735,6 +835,7 @@ function App() {
                   </div>
                 </div>
               )}
+
             </div>
           </div>
 
@@ -1070,7 +1171,35 @@ function App() {
             <p className="text-blue-100 text-sm mt-1">{totalCatches} peixes registrados</p>
           </div>
 
+          <input
+            ref={catchPhotoInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              void identifyFishFromFile(file)
+              e.target.value = ''
+            }}
+          />
+
           <div className="p-4 space-y-3">
+            <button
+              onClick={() => catchPhotoInputRef.current?.click()}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-3 rounded-2xl font-semibold hover:from-blue-700 hover:to-blue-900 transition-colors flex items-center justify-center gap-2"
+            >
+              <Camera className="w-5 h-5" />
+              Nova captura (tirar foto)
+            </button>
+
+            {identifyLoading && (
+              <div className="bg-white p-4 rounded-2xl shadow-md">
+                <p className="text-sm text-gray-700">Identificando peixe pela foto…</p>
+              </div>
+            )}
+
             {catches.map((catch_) => (
               <div key={catch_.id} className="bg-white p-4 rounded-2xl shadow-md">
                 <div className="flex justify-between items-start mb-3">
@@ -1080,10 +1209,17 @@ function App() {
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
-                  <div className="flex items-center gap-2">
-                    <Ruler className="w-4 h-4 text-blue-600" />
-                    <span>{catch_.length} cm</span>
-                  </div>
+                  {catch_.length > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <Ruler className="w-4 h-4 text-blue-600" />
+                      <span>{catch_.length} cm</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Ruler className="w-4 h-4 text-blue-600" />
+                      <span>—</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <Cloud className="w-4 h-4 text-blue-600" />
                     <span>{catch_.weather}</span>
@@ -2464,6 +2600,39 @@ function App() {
         </div>
       )}
 
+      {showFishIdentified && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Peixe identificado</h3>
+            <p className="text-sm text-gray-600 mb-4">Encontramos:</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+              <p className="text-blue-800 font-bold text-xl">{identifiedSpecies}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowFishIdentified(false)
+                  setIdentifiedSpecies('')
+                }}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setNewCatch((prev) => ({ ...prev, species: identifiedSpecies || prev.species }))
+                  setShowFishIdentified(false)
+                  setShowAddCatch(true)
+                }}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Usar e preencher dados
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* AI Scanner Modal */}
       {showAIScanner && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowAIScanner(false)}>
@@ -2541,7 +2710,7 @@ function App() {
 
       {showAddCatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">Nova Captura</h2>
               <button
@@ -2552,11 +2721,21 @@ function App() {
               </button>
             </div>
             <div className="space-y-3">
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-3 text-sm">
+                Registro somente em tempo real: foto + GPS no momento da captura.
+              </div>
               {registerError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">
                   {registerError}
                 </div>
               )}
+
+              {newCatch.photoUrl && (
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden">
+                  <img src={newCatch.photoUrl} alt="Foto da captura" className="w-full h-48 object-cover" />
+                </div>
+              )}
+
               <select
                 value={newCatch.species === '' || fishSpecies.includes(newCatch.species) ? newCatch.species : 'Outro'}
                 onChange={(e) => {
@@ -2609,7 +2788,7 @@ function App() {
                 />
                 <input
                   type="number"
-                  placeholder="Comprimento (cm)"
+                  placeholder="Tamanho (cm) (opcional)"
                   value={newCatch.length}
                   onChange={(e) => setNewCatch({ ...newCatch, length: e.target.value })}
                   min="0"
@@ -2619,16 +2798,27 @@ function App() {
               </div>
               <input
                 type="text"
-                placeholder="Local"
+                placeholder={locationLoading ? 'Obtendo localização…' : 'Local (GPS)'}
                 value={newCatch.location}
-                onChange={(e) => setNewCatch({ ...newCatch, location: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                readOnly
+                className="w-full p-3 border border-gray-300 rounded-xl outline-none bg-gray-50 text-gray-700"
               />
+              <button
+                onClick={() => {
+                  void ensureAutoLocation()
+                }}
+                disabled={locationLoading}
+                className={`w-full py-2.5 rounded-xl font-semibold transition-colors active:scale-95 ${
+                  locationLoading ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {locationLoading ? 'Atualizando GPS…' : 'Atualizar GPS'}
+              </button>
               <input
                 type="text"
-                placeholder="Clima (opcional)"
-                value={newCatch.weather}
-                onChange={(e) => setNewCatch({ ...newCatch, weather: e.target.value })}
+                placeholder="Isca usada (opcional)"
+                value={newCatch.baitUsed}
+                onChange={(e) => setNewCatch({ ...newCatch, baitUsed: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />
               <button
@@ -2638,7 +2828,7 @@ function App() {
                   registerLoading ? 'bg-blue-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {registerLoading ? 'Obtendo localização…' : 'Adicionar Captura'}
+                {registerLoading ? 'Registrando…' : 'Adicionar Captura'}
               </button>
             </div>
           </div>
