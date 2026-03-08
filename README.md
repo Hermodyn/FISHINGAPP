@@ -1,6 +1,8 @@
 # 🎣 Fishing App - Guia do Pescador
 
-Aplicativo mobile-first para pescadores registrarem capturas, encontrarem pontos de pesca e acompanharem condições climáticas.
+Criar uma comunidade onde pescadores possam registrar e compartilhar seus peixes pescados com seus amigos, seja pessoalmente ou online, acabando com as “histórias de pescador”, já que o registro só pode ser feito em tempo real.
+
+Permitir competir e se divertir com seus amigos, criando ligas de competições por categorias definidas pelo próprio usuário.
 
 ## 🎨 Design
 
