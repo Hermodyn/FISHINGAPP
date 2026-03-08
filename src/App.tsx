@@ -499,7 +499,7 @@ function App() {
           <div className="grid grid-cols-3 gap-3 mb-4">
             <button
               onClick={() => setShowAddCatch(true)}
-              className="aspect-square bg-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border-2 border-blue-100"
+              className="aspect-square bg-white/60 backdrop-blur-md rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border border-white/50"
             >
               <Plus className="w-10 h-10 text-blue-600" strokeWidth={2.5} />
               <span className="text-xs font-bold text-gray-800">Register</span>
@@ -507,7 +507,7 @@ function App() {
 
             <button
               onClick={() => setActiveTab('catches')}
-              className="aspect-square bg-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border-2 border-blue-100"
+              className="aspect-square bg-white/60 backdrop-blur-md rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border border-white/50"
             >
               <Fish className="w-10 h-10 text-blue-600" strokeWidth={2} />
               <span className="text-xs font-bold text-gray-800">Catches</span>
@@ -515,7 +515,7 @@ function App() {
 
             <button
               onClick={() => setActiveTab('spots')}
-              className="aspect-square bg-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border-2 border-blue-100"
+              className="aspect-square bg-white/60 backdrop-blur-md rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border border-white/50"
             >
               <MapPin className="w-10 h-10 text-blue-600" strokeWidth={2} />
               <span className="text-xs font-bold text-gray-800">Spots</span>
