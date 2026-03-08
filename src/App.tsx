@@ -87,12 +87,14 @@ interface TideApiResponse {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription' | 'community' | 'leagues' | 'stats' | 'weather'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription' | 'community' | 'leagues' | 'stats' | 'weather' | 'friendsGallery'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [showTips, setShowTips] = useState(false)
   const [showAIScanner, setShowAIScanner] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoGallery | null>(null)
-  const [showFriendsGallery, setShowFriendsGallery] = useState(false)
+
+  const [registerLoading, setRegisterLoading] = useState(false)
+  const [registerError, setRegisterError] = useState<string | null>(null)
 
   const [tideLoading, setTideLoading] = useState(false)
   const [tideError, setTideError] = useState<string | null>(null)
@@ -320,8 +322,31 @@ function App() {
     weather: ''
   })
 
-  const handleAddCatch = useCallback(() => {
-    if (newCatch.species && newCatch.weight && newCatch.length && newCatch.location) {
+  const handleAddCatch = useCallback(async () => {
+    if (registerLoading) return
+
+    if (!newCatch.species || !newCatch.weight || !newCatch.length || !newCatch.location) {
+      setRegisterError('Preencha espécie, peso, comprimento e local para registrar.')
+      return
+    }
+
+    if (!('geolocation' in navigator)) {
+      setRegisterError('Este dispositivo/navegador não suporta geolocalização. O registro só pode ser feito em tempo real com GPS.')
+      return
+    }
+
+    setRegisterLoading(true)
+    setRegisterError(null)
+
+    try {
+      await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve(pos),
+          (err) => reject(err),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        )
+      })
+
       const now = new Date()
       const catchData: Catch = {
         id: catches.length + 1,
@@ -333,11 +358,23 @@ function App() {
         time: now.toTimeString().slice(0, 5),
         weather: newCatch.weather || 'Não informado'
       }
+
       setCatches([catchData, ...catches])
       setNewCatch({ species: '', weight: '', length: '', location: '', weather: '' })
       setShowAddCatch(false)
+    } catch (e) {
+      const err = e as GeolocationPositionError
+      if (typeof err?.code === 'number' && err.code === err.PERMISSION_DENIED) {
+        setRegisterError('Permissão de localização negada. Para registrar em tempo real, habilite o GPS.')
+      } else if (typeof err?.code === 'number' && err.code === err.TIMEOUT) {
+        setRegisterError('Tempo esgotado ao obter sua localização. Tente novamente com o GPS ativo.')
+      } else {
+        setRegisterError('Não foi possível obter sua localização. O registro só pode ser feito em tempo real.')
+      }
+    } finally {
+      setRegisterLoading(false)
     }
-  }, [newCatch, catches])
+  }, [catches, newCatch, registerLoading])
 
   // Close registration modal when tab changes
   useEffect(() => {
@@ -345,6 +382,13 @@ function App() {
       setShowAddCatch(false)
     }
   }, [activeTab])
+
+  useEffect(() => {
+    if (showAddCatch) {
+      setRegisterError(null)
+      setRegisterLoading(false)
+    }
+  }, [showAddCatch])
 
   // Close tips menu when clicking outside
   useEffect(() => {
@@ -514,11 +558,11 @@ function App() {
             </button>
 
             <button
-              onClick={() => setActiveTab('spots')}
+              onClick={() => setActiveTab('leagues')}
               className="aspect-square bg-white/60 backdrop-blur-md rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border border-white/50"
             >
-              <MapPin className="w-10 h-10 text-blue-600" strokeWidth={2} />
-              <span className="text-xs font-bold text-gray-800">Spots</span>
+              <Trophy className="w-10 h-10 text-amber-500" strokeWidth={2} />
+              <span className="text-xs font-bold text-gray-800">Ligas</span>
             </button>
           </div>
 
@@ -547,13 +591,13 @@ function App() {
                 )}
               </button>
               <button 
-                onClick={() => setActiveTab('leagues')}
+                onClick={() => setActiveTab('spots')}
                 className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
               >
-                <Trophy className="w-7 h-7 text-amber-500" />
+                <MapPin className="w-7 h-7 text-blue-600" />
               </button>
               <button 
-                onClick={() => setShowFriendsGallery(true)}
+                onClick={() => setActiveTab('friendsGallery')}
                 className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
               >
                 <Users className="w-7 h-7 text-blue-600" />
@@ -564,8 +608,27 @@ function App() {
           {/* Photo Gallery - Grid Layout */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-bold text-gray-700">Gallery</h3>
-              <button 
+              <div className="flex items-center gap-3">
+                <h3 className="text-sm font-bold text-gray-700">Gallery</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-blue-600 font-semibold">Marcações de amigos</span>
+                  <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 backdrop-blur-md border border-white/50 shadow-sm">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center text-[9px] font-bold">JF</div>
+                      <span className="text-[10px] font-semibold text-gray-700">John</span>
+                    </div>
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 backdrop-blur-md border border-white/50 shadow-sm">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-green-400 to-green-600 text-white flex items-center justify-center text-[9px] font-bold">MW</div>
+                      <span className="text-[10px] font-semibold text-gray-700">Mike</span>
+                    </div>
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 backdrop-blur-md border border-white/50 shadow-sm">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 text-white flex items-center justify-center text-[9px] font-bold">SO</div>
+                      <span className="text-[10px] font-semibold text-gray-700">Sarah</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
                 onClick={() => setShowAIScanner(true)}
                 className="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1"
               >
@@ -593,6 +656,76 @@ function App() {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {activeTab === 'friendsGallery' && (
+        <div className="pb-20 max-w-2xl mx-auto" style={{ padding: '5mm' }}>
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-b-3xl shadow-lg">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Users className="w-7 h-7" />
+              Galeria dos Amigos
+            </h1>
+            <p className="text-blue-100 text-sm mt-1">Fotos de capturas dos pescadores conectados</p>
+          </div>
+
+          <div className="mt-4">
+            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  JF
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800">John Fisher</h3>
+                  <p className="text-sm text-gray-500">12 fotos • Conectado há 3 meses</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                <img src="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  MW
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800">Mike Waters</h3>
+                  <p className="text-sm text-gray-500">8 fotos • Conectado há 2 meses</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <img src="https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  SO
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800">Sarah Ocean</h3>
+                  <p className="text-sm text-gray-500">15 fotos • Conectado há 5 meses</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <img src="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                <img src="https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+                <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
+              </div>
+            </div>
+
+            <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2">
+              <Users className="w-5 h-5" />
+              Adicionar Mais Amigos
+            </button>
+          </div>
         </div>
       )}
 
@@ -1790,93 +1923,6 @@ function App() {
         </div>
       )}
 
-      {/* Friends Gallery Modal */}
-      {showFriendsGallery && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowFriendsGallery(false)}>
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-t-3xl z-10">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <Users className="w-7 h-7" />
-                    Galeria dos Amigos
-                  </h2>
-                  <p className="text-blue-100 text-sm mt-1">Fotos de capturas dos pescadores conectados</p>
-                </div>
-                <button
-                  onClick={() => setShowFriendsGallery(false)}
-                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
-                >
-                  <span className="text-2xl leading-none">×</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              {/* Friend 1 - John Fisher */}
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    JF
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-800">John Fisher</h3>
-                    <p className="text-sm text-gray-500">12 fotos • Conectado há 3 meses</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                  <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                  <img src="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                </div>
-              </div>
-
-              {/* Friend 2 - Mike Waters */}
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    MW
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-800">Mike Waters</h3>
-                    <p className="text-sm text-gray-500">8 fotos • Conectado há 2 meses</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <img src="https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                  <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                  <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                </div>
-              </div>
-
-              {/* Friend 3 - Sarah Ocean */}
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    SO
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-800">Sarah Ocean</h3>
-                    <p className="text-sm text-gray-500">15 fotos • Conectado há 5 meses</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <img src="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                  <img src="https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                  <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300" alt="Catch" className="w-full h-32 object-cover rounded-lg" />
-                </div>
-              </div>
-
-              {/* Add Friends Button */}
-              <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2">
-                <Users className="w-5 h-5" />
-                Adicionar Mais Amigos
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Photo Zoom Modal */}
       {selectedPhoto && (
         <div 
@@ -1998,6 +2044,11 @@ function App() {
               </button>
             </div>
             <div className="space-y-3">
+              {registerError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">
+                  {registerError}
+                </div>
+              )}
               <select
                 value={newCatch.species === '' || fishSpecies.includes(newCatch.species) ? newCatch.species : 'Outro'}
                 onChange={(e) => {
@@ -2074,9 +2125,12 @@ function App() {
               />
               <button
                 onClick={handleAddCatch}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors active:scale-95"
+                disabled={registerLoading}
+                className={`w-full py-3 rounded-xl font-semibold transition-colors active:scale-95 ${
+                  registerLoading ? 'bg-blue-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
-                Adicionar Captura
+                {registerLoading ? 'Obtendo localização…' : 'Adicionar Captura'}
               </button>
             </div>
           </div>
