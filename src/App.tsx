@@ -86,6 +86,35 @@ interface TideApiResponse {
   extremes?: TideExtremePoint[]
 }
 
+interface Friend {
+  id: number
+  name: string
+  initials: string
+  gradient: string
+}
+
+interface League {
+  id: number
+  name: string
+  category: string
+  rules: string
+  invitedFriendIds: number[]
+  tournamentName?: string
+  location?: string
+  startAt?: string
+  endAt?: string
+  allowedSpecies?: string
+  modality?: string
+  boatMotor?: string
+  acceptTerms?: boolean
+  imageAuthorization?: boolean
+  emergencyContact?: string
+  liabilityTerm?: boolean
+  weighingMethod?: string
+  tiebreakCriteria?: string
+  createdAt: number
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription' | 'community' | 'leagues' | 'stats' | 'weather' | 'friendsGallery'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
@@ -102,6 +131,29 @@ function App() {
   const [tideStatus, setTideStatus] = useState<string | null>(null)
   const [tideNext, setTideNext] = useState<{ time: string; type: string; height: number } | null>(null)
   const [tideAfterNext, setTideAfterNext] = useState<{ time: string; type: string; height: number } | null>(null)
+
+  const [showCreateLeague, setShowCreateLeague] = useState(false)
+  const [leagues, setLeagues] = useState<League[]>([])
+  const [editingLeagueId, setEditingLeagueId] = useState<number | null>(null)
+  const [newLeague, setNewLeague] = useState({
+    name: '',
+    category: '',
+    rules: '',
+    invitedFriendIds: [] as number[],
+    tournamentName: '',
+    location: '',
+    startAt: '',
+    endAt: '',
+    allowedSpecies: '',
+    modality: '',
+    boatMotor: '',
+    acceptTerms: false,
+    imageAuthorization: false,
+    emergencyContact: '',
+    liabilityTerm: false,
+    weighingMethod: '',
+    tiebreakCriteria: ''
+  })
   const [catches, setCatches] = useState<Catch[]>([
     {
       id: 1,
@@ -148,6 +200,15 @@ function App() {
 
   const fishingCondition = 'Bom'
   const sunrise = '06:15'
+
+  const friends = useMemo<Friend[]>(
+    () => [
+      { id: 1, name: 'John Fisher', initials: 'JF', gradient: 'from-blue-400 to-blue-600' },
+      { id: 2, name: 'Mike Waters', initials: 'MW', gradient: 'from-green-400 to-green-600' },
+      { id: 3, name: 'Sarah Ocean', initials: 'SO', gradient: 'from-purple-400 to-purple-600' }
+    ],
+    []
+  )
 
   const fetchTidesForLocation = useCallback(async (lat: number, lon: number) => {
     const apiKey = (import.meta as any).env?.VITE_WORLDTIDES_KEY as string | undefined
@@ -389,6 +450,144 @@ function App() {
       setRegisterLoading(false)
     }
   }, [showAddCatch])
+
+  useEffect(() => {
+    if (showCreateLeague) return
+    setEditingLeagueId(null)
+    setNewLeague({
+      name: '',
+      category: '',
+      rules: '',
+      invitedFriendIds: [],
+      tournamentName: '',
+      location: '',
+      startAt: '',
+      endAt: '',
+      allowedSpecies: '',
+      modality: '',
+      boatMotor: '',
+      acceptTerms: false,
+      imageAuthorization: false,
+      emergencyContact: '',
+      liabilityTerm: false,
+      weighingMethod: '',
+      tiebreakCriteria: ''
+    })
+  }, [showCreateLeague])
+
+  useEffect(() => {
+    if (!showCreateLeague) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [showCreateLeague])
+
+  const handleToggleInviteFriend = useCallback((friendId: number) => {
+    setNewLeague((prev) => {
+      const exists = prev.invitedFriendIds.includes(friendId)
+      return {
+        ...prev,
+        invitedFriendIds: exists
+          ? prev.invitedFriendIds.filter((id) => id !== friendId)
+          : [...prev.invitedFriendIds, friendId]
+      }
+    })
+  }, [])
+
+  const handleCreateLeague = useCallback(() => {
+    const now = Date.now()
+    const fallbackName = 'Torneio sem nome'
+    const fallbackCategory = 'Sem categoria'
+
+    if (editingLeagueId !== null) {
+      setLeagues((prev) =>
+        prev.map((l) =>
+          l.id !== editingLeagueId
+            ? l
+            : {
+                ...l,
+                name: newLeague.name || fallbackName,
+                category: newLeague.category || fallbackCategory,
+                rules: newLeague.rules,
+                invitedFriendIds: newLeague.invitedFriendIds,
+                tournamentName: newLeague.tournamentName,
+                location: newLeague.location,
+                startAt: newLeague.startAt,
+                endAt: newLeague.endAt,
+                allowedSpecies: newLeague.allowedSpecies,
+                modality: newLeague.modality,
+                boatMotor: newLeague.boatMotor,
+                acceptTerms: newLeague.acceptTerms,
+                imageAuthorization: newLeague.imageAuthorization,
+                emergencyContact: newLeague.emergencyContact,
+                liabilityTerm: newLeague.liabilityTerm,
+                weighingMethod: newLeague.weighingMethod,
+                tiebreakCriteria: newLeague.tiebreakCriteria
+              }
+        )
+      )
+      setShowCreateLeague(false)
+      return
+    }
+
+    const created: League = {
+      id: now,
+      name: newLeague.name || fallbackName,
+      category: newLeague.category || fallbackCategory,
+      rules: newLeague.rules,
+      invitedFriendIds: newLeague.invitedFriendIds,
+      tournamentName: newLeague.tournamentName,
+      location: newLeague.location,
+      startAt: newLeague.startAt,
+      endAt: newLeague.endAt,
+      allowedSpecies: newLeague.allowedSpecies,
+      modality: newLeague.modality,
+      boatMotor: newLeague.boatMotor,
+      acceptTerms: newLeague.acceptTerms,
+      imageAuthorization: newLeague.imageAuthorization,
+      emergencyContact: newLeague.emergencyContact,
+      liabilityTerm: newLeague.liabilityTerm,
+      weighingMethod: newLeague.weighingMethod,
+      tiebreakCriteria: newLeague.tiebreakCriteria,
+      createdAt: now
+    }
+
+    setLeagues((prev) => [created, ...prev])
+    setShowCreateLeague(false)
+  }, [editingLeagueId, newLeague])
+
+  const handleEditLeague = useCallback((leagueId: number) => {
+    const league = leagues.find((l) => l.id === leagueId)
+    if (!league) return
+
+    setEditingLeagueId(leagueId)
+    setNewLeague({
+      name: league.name || '',
+      category: league.category || '',
+      rules: league.rules || '',
+      invitedFriendIds: league.invitedFriendIds || [],
+      tournamentName: league.tournamentName || '',
+      location: league.location || '',
+      startAt: league.startAt || '',
+      endAt: league.endAt || '',
+      allowedSpecies: league.allowedSpecies || '',
+      modality: league.modality || '',
+      boatMotor: league.boatMotor || '',
+      acceptTerms: Boolean(league.acceptTerms),
+      imageAuthorization: Boolean(league.imageAuthorization),
+      emergencyContact: league.emergencyContact || '',
+      liabilityTerm: Boolean(league.liabilityTerm),
+      weighingMethod: league.weighingMethod || '',
+      tiebreakCriteria: league.tiebreakCriteria || ''
+    })
+    setShowCreateLeague(true)
+  }, [leagues])
+
+  const handleDeleteLeague = useCallback((leagueId: number) => {
+    setLeagues((prev) => prev.filter((l) => l.id !== leagueId))
+  }, [])
 
   // Close tips menu when clicking outside
   useEffect(() => {
@@ -1140,9 +1339,9 @@ function App() {
         </div>
       )}
 
-      {/* Leagues Tab - Coming Soon */}
+      {/* Leagues Tab */}
       {activeTab === 'leagues' && (
-        <div className="pb-20 max-w-2xl mx-auto">
+        <div className="pb-20 max-w-2xl mx-auto relative z-10">
           <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 rounded-b-3xl shadow-lg">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Trophy className="w-7 h-7" />
@@ -1151,38 +1350,347 @@ function App() {
             <p className="text-amber-100 text-sm mt-1">Competições e rankings entre pescadores</p>
           </div>
 
-          <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
-            <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Trophy className="w-12 h-12 text-amber-600" />
-              </div>
-              
-              <h2 className="text-2xl font-bold text-gray-800 mb-3">Em Breve!</h2>
-              <p className="text-gray-600 mb-6">
-                Estamos preparando as ligas de pesca para você competir com amigos e pescadores do mundo todo.
-              </p>
-
-              <div className="space-y-3 mb-6">
-                <div className="bg-amber-50 p-4 rounded-xl text-left">
-                  <h3 className="font-bold text-amber-900 mb-2 flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    Liga dos Amigos
-                  </h3>
-                  <p className="text-sm text-gray-700">Compete com seus amigos pescadores e veja quem é o melhor!</p>
+          <div className="p-4">
+            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800">Crie sua própria liga</h2>
+                  <p className="text-sm text-gray-600">Defina categoria, regras e convide amigos</p>
                 </div>
+                <button
+                  onClick={() => setShowCreateLeague(true)}
+                  className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-colors"
+                >
+                  Criar
+                </button>
+              </div>
+            </div>
 
-                <div className="bg-orange-50 p-4 rounded-xl text-left">
-                  <h3 className="font-bold text-orange-900 mb-2 flex items-center gap-2">
-                    <Weight className="w-5 h-5" />
-                    Liga por Kg
-                  </h3>
-                  <p className="text-sm text-gray-700">Ranking baseado no peso total das suas capturas.</p>
+            {leagues.length > 0 ? (
+              <div className="space-y-3">
+                {leagues.map((l) => (
+                  <div key={l.id} className="bg-white rounded-2xl shadow-md p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-800">{l.name}</h3>
+                        <p className="text-sm text-gray-600 mt-0.5">Categoria: <span className="font-semibold">{l.category}</span></p>
+                        {l.rules && <p className="text-sm text-gray-600 mt-1">{l.rules}</p>}
+                        {(l.location || l.startAt || l.endAt || l.allowedSpecies || l.modality || l.boatMotor) && (
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                            {l.location && (
+                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-2">
+                                <span className="font-semibold">Local:</span> {l.location}
+                              </div>
+                            )}
+                            {l.startAt && (
+                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-2">
+                                <span className="font-semibold">Início:</span> {l.startAt}
+                              </div>
+                            )}
+                            {l.endAt && (
+                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-2">
+                                <span className="font-semibold">Fim:</span> {l.endAt}
+                              </div>
+                            )}
+                            {l.allowedSpecies && (
+                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-2 col-span-2">
+                                <span className="font-semibold">Espécies:</span> {l.allowedSpecies}
+                              </div>
+                            )}
+                            {l.modality && (
+                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-2">
+                                <span className="font-semibold">Modalidade:</span> {l.modality}
+                              </div>
+                            )}
+                            {l.boatMotor && (
+                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-2">
+                                <span className="font-semibold">Embarcação/Motor:</span> {l.boatMotor}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {(l.acceptTerms || l.imageAuthorization || l.emergencyContact || l.liabilityTerm || l.weighingMethod || l.tiebreakCriteria) && (
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                            {typeof l.acceptTerms === 'boolean' && (
+                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2">
+                                <span className="font-semibold">Aceite termos:</span> {l.acceptTerms ? 'Sim' : 'Não'}
+                              </div>
+                            )}
+                            {typeof l.imageAuthorization === 'boolean' && (
+                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2">
+                                <span className="font-semibold">Uso de imagem:</span> {l.imageAuthorization ? 'Sim' : 'Não'}
+                              </div>
+                            )}
+                            {l.emergencyContact && (
+                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2 col-span-2">
+                                <span className="font-semibold">Emergência:</span> {l.emergencyContact}
+                              </div>
+                            )}
+                            {typeof l.liabilityTerm === 'boolean' && (
+                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2 col-span-2">
+                                <span className="font-semibold">Termo de responsabilidade:</span> {l.liabilityTerm ? 'Sim' : 'Não'}
+                              </div>
+                            )}
+                            {l.weighingMethod && (
+                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2">
+                                <span className="font-semibold">Pesagem:</span> {l.weighingMethod}
+                              </div>
+                            )}
+                            {l.tiebreakCriteria && (
+                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2">
+                                <span className="font-semibold">Desempate:</span> {l.tiebreakCriteria}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {l.invitedFriendIds.length > 0 ? (
+                            l.invitedFriendIds.map((id) => {
+                              const f = friends.find((x) => x.id === id)
+                              if (!f) return null
+                              return (
+                                <div
+                                  key={id}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 border border-amber-200"
+                                >
+                                  <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${f.gradient} text-white flex items-center justify-center text-[10px] font-bold`}>
+                                    {f.initials}
+                                  </div>
+                                  <span className="text-xs font-semibold text-amber-900">{f.name.split(' ')[0]}</span>
+                                </div>
+                              )
+                            })
+                          ) : (
+                            <span className="text-xs text-gray-500">Sem convites ainda</span>
+                          )}
+                        </div>
+
+                        <div className="mt-4 flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditLeague(l.id)}
+                            className="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200 transition-colors"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteLeague(l.id)}
+                            className="px-3 py-1.5 rounded-xl bg-red-50 text-red-700 text-xs font-semibold hover:bg-red-100 transition-colors"
+                          >
+                            Excluir
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-gray-500 whitespace-nowrap">
+                        {new Date(l.createdAt).toLocaleDateString('pt-BR')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-md p-6 text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trophy className="w-10 h-10 text-amber-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-800">Nenhuma liga criada</h3>
+                <p className="text-sm text-gray-600 mt-1">Crie uma liga e convide seus amigos para competir</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showCreateLeague && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto overscroll-contain"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Criar Liga</h2>
+              <button
+                onClick={() => setShowCreateLeague(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <div className="text-sm font-bold text-amber-900 mb-2">Informações Técnicas e Estruturais</div>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Nome do Torneio"
+                    value={newLeague.tournamentName}
+                    onChange={(e) => setNewLeague({ ...newLeague, tournamentName: e.target.value })}
+                    className="w-full p-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Local/Pesqueiro"
+                    value={newLeague.location}
+                    onChange={(e) => setNewLeague({ ...newLeague, location: e.target.value })}
+                    className="w-full p-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="datetime-local"
+                      value={newLeague.startAt}
+                      onChange={(e) => setNewLeague({ ...newLeague, startAt: e.target.value })}
+                      className="w-full p-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                    />
+                    <input
+                      type="datetime-local"
+                      value={newLeague.endAt}
+                      onChange={(e) => setNewLeague({ ...newLeague, endAt: e.target.value })}
+                      className="w-full p-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Espécies Permitidas (ex: Tambacu, Tucunaré, Tilápia)"
+                    value={newLeague.allowedSpecies}
+                    onChange={(e) => setNewLeague({ ...newLeague, allowedSpecies: e.target.value })}
+                    className="w-full p-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Modalidade (Pesca esportiva / pesque e pague)"
+                    value={newLeague.modality}
+                    onChange={(e) => setNewLeague({ ...newLeague, modality: e.target.value })}
+                    className="w-full p-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Tipo de Embarcação/Motor (se aplicável)"
+                    value={newLeague.boatMotor}
+                    onChange={(e) => setNewLeague({ ...newLeague, boatMotor: e.target.value })}
+                    className="w-full p-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                  />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 px-6 rounded-xl font-semibold">
-                🚀 Lançamento em breve
+              <div className="bg-white border border-gray-200 rounded-xl p-3">
+                <div className="text-sm font-bold text-gray-800 mb-2">Regulamento e Conformidade</div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={newLeague.acceptTerms}
+                      onChange={(e) => setNewLeague({ ...newLeague, acceptTerms: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    Aceite dos Termos
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={newLeague.imageAuthorization}
+                      onChange={(e) => setNewLeague({ ...newLeague, imageAuthorization: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    Autorização de Uso de Imagem
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Contato de Emergência"
+                    value={newLeague.emergencyContact}
+                    onChange={(e) => setNewLeague({ ...newLeague, emergencyContact: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  />
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={newLeague.liabilityTerm}
+                      onChange={(e) => setNewLeague({ ...newLeague, liabilityTerm: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    Termo de Responsabilidade
+                  </label>
+                </div>
               </div>
+
+              <div className="bg-white border border-gray-200 rounded-xl p-3">
+                <div className="text-sm font-bold text-gray-800 mb-2">Critérios de Premiação (Pontuação)</div>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Método de Pesagem/Medição"
+                    value={newLeague.weighingMethod}
+                    onChange={(e) => setNewLeague({ ...newLeague, weighingMethod: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Critério de Desempate"
+                    value={newLeague.tiebreakCriteria}
+                    onChange={(e) => setNewLeague({ ...newLeague, tiebreakCriteria: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-xl p-3">
+                <div className="text-sm font-bold text-gray-800 mb-2">Campos básicos (opcionais)</div>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Nome (aparece na lista)"
+                    value={newLeague.name}
+                    onChange={(e) => setNewLeague({ ...newLeague, name: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Categoria"
+                    value={newLeague.category}
+                    onChange={(e) => setNewLeague({ ...newLeague, category: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  />
+                  <textarea
+                    placeholder="Regras"
+                    value={newLeague.rules}
+                    onChange={(e) => setNewLeague({ ...newLeague, rules: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none min-h-[90px]"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <div className="text-sm font-bold text-amber-900 mb-2">Convidar amigos</div>
+                <div className="flex flex-wrap gap-2">
+                  {friends.map((f) => {
+                    const selected = newLeague.invitedFriendIds.includes(f.id)
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => handleToggleInviteFriend(f.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-colors ${
+                          selected
+                            ? 'bg-amber-500 text-white border-amber-500'
+                            : 'bg-white text-amber-900 border-amber-200 hover:bg-amber-100'
+                        }`}
+                      >
+                        <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${f.gradient} text-white flex items-center justify-center text-xs font-bold`}>
+                          {f.initials}
+                        </div>
+                        <span className="text-sm font-semibold">{f.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <button
+                onClick={handleCreateLeague}
+                className="w-full py-3 rounded-xl font-semibold transition-colors bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700"
+              >
+                {editingLeagueId !== null ? 'Salvar Alterações' : 'Criar Liga'}
+              </button>
             </div>
           </div>
         </div>
