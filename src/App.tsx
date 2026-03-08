@@ -68,13 +68,38 @@ interface SubscriptionPlan {
   popular?: boolean
 }
 
+interface TideHeightPoint {
+  dt: number
+  height: number
+}
+
+interface TideExtremePoint {
+  dt: number
+  height: number
+  type: 'High' | 'Low'
+}
+
+interface TideApiResponse {
+  status?: number
+  error?: string
+  heights?: TideHeightPoint[]
+  extremes?: TideExtremePoint[]
+}
+
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription' | 'community' | 'leagues' | 'stats'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription' | 'community' | 'leagues' | 'stats' | 'weather'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [showTips, setShowTips] = useState(false)
   const [showAIScanner, setShowAIScanner] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoGallery | null>(null)
   const [showFriendsGallery, setShowFriendsGallery] = useState(false)
+
+  const [tideLoading, setTideLoading] = useState(false)
+  const [tideError, setTideError] = useState<string | null>(null)
+  const [tideCurrentHeight, setTideCurrentHeight] = useState<number | null>(null)
+  const [tideStatus, setTideStatus] = useState<string | null>(null)
+  const [tideNext, setTideNext] = useState<{ time: string; type: string; height: number } | null>(null)
+  const [tideAfterNext, setTideAfterNext] = useState<{ time: string; type: string; height: number } | null>(null)
   const [catches, setCatches] = useState<Catch[]>([
     {
       id: 1,
@@ -121,6 +146,122 @@ function App() {
 
   const fishingCondition = 'Bom'
   const sunrise = '06:15'
+
+  const fetchTidesForLocation = useCallback(async (lat: number, lon: number) => {
+    const apiKey = (import.meta as any).env?.VITE_WORLDTIDES_KEY as string | undefined
+    if (!apiKey) {
+      setTideError('Chave de API não configurada. Defina VITE_WORLDTIDES_KEY no .env e reinicie o servidor.')
+      return
+    }
+
+    setTideLoading(true)
+    setTideError(null)
+
+    try {
+      const url = new URL('https://www.worldtides.info/api/v3')
+      url.searchParams.set('heights', '')
+      url.searchParams.set('extremes', '')
+      url.searchParams.set('date', 'today')
+      url.searchParams.set('days', '1')
+      url.searchParams.set('localtime', '1')
+      url.searchParams.set('lat', String(lat))
+      url.searchParams.set('lon', String(lon))
+      url.searchParams.set('key', apiKey)
+
+      const res = await fetch(url.toString())
+      const data = (await res.json()) as TideApiResponse
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Erro ao buscar marés')
+      }
+
+      const now = Math.floor(Date.now() / 1000)
+
+      const heights = Array.isArray(data.heights) ? data.heights : []
+      if (heights.length > 0) {
+        const closest = heights.reduce((best, p) => {
+          return Math.abs(p.dt - now) < Math.abs(best.dt - now) ? p : best
+        }, heights[0])
+        setTideCurrentHeight(Number(closest.height.toFixed(2)))
+      } else {
+        setTideCurrentHeight(null)
+      }
+
+      const extremes = Array.isArray(data.extremes) ? data.extremes : []
+      const nextExtremes = extremes
+        .filter((e) => e.dt >= now)
+        .sort((a, b) => a.dt - b.dt)
+        .slice(0, 2)
+
+      const formatTime = (dt: number) => {
+        return new Date(dt * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      }
+
+      const normalizeType = (t: 'High' | 'Low') => (t === 'High' ? 'Alta' : 'Baixa')
+
+      setTideNext(
+        nextExtremes[0]
+          ? {
+              time: formatTime(nextExtremes[0].dt),
+              type: normalizeType(nextExtremes[0].type),
+              height: Number(nextExtremes[0].height.toFixed(2))
+            }
+          : null
+      )
+
+      setTideAfterNext(
+        nextExtremes[1]
+          ? {
+              time: formatTime(nextExtremes[1].dt),
+              type: normalizeType(nextExtremes[1].type),
+              height: Number(nextExtremes[1].height.toFixed(2))
+            }
+          : null
+      )
+
+      // Tendência aproximada: se a próxima maré for "Alta", estamos em enchente; se for "Baixa", vazante
+      if (nextExtremes[0]) {
+        setTideStatus(nextExtremes[0].type === 'High' ? 'Enchente' : 'Vazante')
+      } else {
+        setTideStatus(null)
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Erro ao buscar marés'
+      setTideError(message)
+    } finally {
+      setTideLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab !== 'weather') return
+    if (tideLoading) return
+    if (tideCurrentHeight !== null || tideNext !== null || tideError) return
+
+    if (!('geolocation' in navigator)) {
+      setTideError('Geolocalização não suportada neste dispositivo/navegador.')
+      return
+    }
+
+    setTideLoading(true)
+    setTideError(null)
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setTideLoading(false)
+        fetchTidesForLocation(pos.coords.latitude, pos.coords.longitude)
+      },
+      (err) => {
+        setTideLoading(false)
+        if (err.code === err.PERMISSION_DENIED) {
+          setTideError('Permissão de localização negada. Habilite para ver as marés automaticamente.')
+        } else {
+          setTideError('Não foi possível obter sua localização para calcular as marés.')
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    )
+  }, [activeTab, fetchTidesForLocation, tideCurrentHeight, tideError, tideLoading, tideNext])
 
   // V2.0 - Photo Gallery Data
   const [photoGallery] = useState<PhotoGallery[]>([
@@ -452,22 +593,34 @@ function App() {
             </div>
           </div>
 
-          {/* Weather Card - Fixed at Bottom */}
-          <div className="fixed bottom-[calc(4rem+5mm)] left-0 right-0 z-20" style={{ padding: '0 5mm' }}>
-            <div 
-              className="max-w-lg mx-auto rounded-2xl border-2 p-4"
-              style={{ 
+        </div>
+      )}
+
+      {activeTab === 'weather' && (
+        <div className="pb-20 max-w-2xl mx-auto" style={{ padding: '5mm' }}>
+          <div className="bg-gradient-to-r from-sky-600 to-blue-800 text-white p-6 rounded-b-3xl shadow-lg">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Cloud className="w-7 h-7" />
+              Clima & Condições
+            </h1>
+            <p className="text-sky-100 text-sm mt-1">Acompanhe as condições para a sua próxima pescaria</p>
+          </div>
+
+          <div className="mt-4">
+            <div
+              className="rounded-2xl border-2 p-4"
+              style={{
                 background: "hsl(210 70% 20%)",
                 borderColor: "rgba(255, 255, 255, 0.15)",
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 -2px 8px rgba(0, 0, 0, 0.2)"
               }}
             >
               <div className="flex items-center gap-2 mb-3">
-                <Fish className="w-4 h-4 relative z-10" style={{ color: "hsl(195 80% 55%)" }} />
-                <h3 className="text-sm font-semibold relative z-10" style={{ color: "hsl(45 20% 95%)" }}>Condições de Pesca</h3>
-                <span 
-                  className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full relative z-10"
-                  style={{ 
+                <Fish className="w-4 h-4" style={{ color: "hsl(195 80% 55%)" }} />
+                <h3 className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>Condições de Pesca</h3>
+                <span
+                  className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full"
+                  style={{
                     background: "hsl(150 50% 40% / 0.3)",
                     color: "hsl(150 60% 60%)"
                   }}
@@ -475,7 +628,8 @@ function App() {
                   {fishingCondition}
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-2 relative z-10">
+
+              <div className="grid grid-cols-4 gap-2">
                 <div className="flex flex-col items-center gap-0.5">
                   <Cloud className="w-4 h-4" style={{ color: "hsl(38 85% 60%)" }} />
                   <span className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Temp</span>
@@ -495,6 +649,78 @@ function App() {
                   <Sunrise className="w-4 h-4" style={{ color: "hsl(38 85% 60%)" }} />
                   <span className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Nascer</span>
                   <span className="text-xs font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{sunrise}</span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="rounded-2xl border-2 p-4 mt-3"
+              style={{
+                background: "hsl(210 65% 18%)",
+                borderColor: "rgba(255, 255, 255, 0.15)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 -2px 8px rgba(0, 0, 0, 0.2)"
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Anchor className="w-4 h-4" style={{ color: "hsl(195 80% 55%)" }} />
+                <h3 className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>Marés</h3>
+                {tideStatus && (
+                  <span
+                    className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    style={{
+                      background: "hsl(195 70% 35% / 0.35)",
+                      color: "hsl(195 85% 70%)"
+                    }}
+                  >
+                    {tideStatus}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl p-3" style={{ background: "rgba(255, 255, 255, 0.06)" }}>
+                  <p className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Altura atual</p>
+                  {tideLoading ? (
+                    <p className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>Carregando...</p>
+                  ) : tideCurrentHeight !== null ? (
+                    <p className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{tideCurrentHeight} m</p>
+                  ) : (
+                    <p className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>—</p>
+                  )}
+                </div>
+                <div className="rounded-xl p-3" style={{ background: "rgba(255, 255, 255, 0.06)" }}>
+                  <p className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Próxima maré</p>
+                  {tideLoading ? (
+                    <p className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>Carregando...</p>
+                  ) : tideNext ? (
+                    <>
+                      <p className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{tideNext.type} • {tideNext.time}</p>
+                      <p className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>{tideNext.height} m</p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>—</p>
+                  )}
+                </div>
+                <div className="rounded-xl p-3" style={{ background: "rgba(255, 255, 255, 0.06)" }}>
+                  <p className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Depois</p>
+                  {tideLoading ? (
+                    <p className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>Carregando...</p>
+                  ) : tideAfterNext ? (
+                    <>
+                      <p className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>{tideAfterNext.type} • {tideAfterNext.time}</p>
+                      <p className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>{tideAfterNext.height} m</p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-semibold" style={{ color: "hsl(45 20% 95%)" }}>—</p>
+                  )}
+                </div>
+                <div className="rounded-xl p-3" style={{ background: "rgba(255, 255, 255, 0.06)" }}>
+                  <p className="text-[10px]" style={{ color: "hsl(210 15% 65%)" }}>Dica</p>
+                  {tideError ? (
+                    <p className="text-[11px]" style={{ color: "hsl(45 20% 95%)" }}>{tideError}</p>
+                  ) : (
+                    <p className="text-[11px]" style={{ color: "hsl(45 20% 95%)" }}>Em áreas costeiras, a troca de maré costuma ativar a pesca.</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1915,6 +2141,16 @@ function App() {
           >
             <MessageSquare className={`w-5 h-5 ${activeTab === 'community' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
             <span className="text-[9px] font-medium">Fórum</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('weather')}
+            className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
+            style={{
+              color: activeTab === 'weather' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+            }}
+          >
+            <Cloud className={`w-5 h-5 ${activeTab === 'weather' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <span className="text-[9px] font-medium">Clima</span>
           </button>
         </div>
       </nav>
