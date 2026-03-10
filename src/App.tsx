@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Image, Info, Wrench, Target, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Image, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -129,7 +129,10 @@ function App() {
   const [showAIScanner, setShowAIScanner] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoGallery | null>(null)
   const [galleryMode, setGalleryMode] = useState<'mine' | 'friends'>('mine')
-
+  const [photoLikes, setPhotoLikes] = useState<Record<number, boolean>>({})
+  const [photoComments, setPhotoComments] = useState<Record<number, string[]>>({})
+  const [showPhotoComments, setShowPhotoComments] = useState(false)
+  const [newPhotoComment, setNewPhotoComment] = useState('')
   const [registerLoading, setRegisterLoading] = useState(false)
   const [registerError, setRegisterError] = useState<string | null>(null)
 
@@ -442,15 +445,73 @@ function App() {
 
   const zoomGalleryPhotos = useMemo(() => {
     if (activeTab === 'friendsGallery') {
-      return galleryMode === 'friends' ? friendsGalleryPhotos : mineGalleryPhotos
+      return galleryMode === 'mine' ? mineGalleryPhotos : friendsGalleryPhotos
     }
     return mineGalleryPhotos
   }, [activeTab, friendsGalleryPhotos, galleryMode, mineGalleryPhotos])
 
   const selectedZoomIndex = useMemo(() => {
     if (!selectedPhoto) return -1
-    return zoomGalleryPhotos.findIndex((p) => p.id === selectedPhoto.id)
+    const idx = zoomGalleryPhotos.findIndex((p) => p.id === selectedPhoto.id)
+    return idx
   }, [selectedPhoto, zoomGalleryPhotos])
+
+  useEffect(() => {
+    if (!selectedPhoto) {
+      setShowPhotoComments(false)
+      setNewPhotoComment('')
+      return
+    }
+    setShowPhotoComments(false)
+    setNewPhotoComment('')
+  }, [selectedPhoto])
+
+  const handleToggleLikePhoto = useCallback((photoId: number) => {
+    setPhotoLikes((prev) => ({ ...prev, [photoId]: !prev[photoId] }))
+  }, [])
+
+  const handleAddPhotoComment = useCallback((photoId: number) => {
+    const text = newPhotoComment.trim()
+    if (!text) return
+    setPhotoComments((prev) => ({ ...prev, [photoId]: [...(prev[photoId] || []), text] }))
+    setNewPhotoComment('')
+  }, [newPhotoComment])
+
+  const handleShareSelectedPhoto = useCallback(async () => {
+    if (!selectedPhoto) return
+    const url = selectedPhoto.url
+    try {
+      if (typeof navigator !== 'undefined' && 'share' in navigator) {
+        await (navigator as any).share({ title: 'Foto da pescaria', url })
+        return
+      }
+    } catch {
+    }
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url)
+        alert('Link copiado!')
+        return
+      }
+    } catch {
+    }
+
+    try {
+      const textarea = document.createElement('textarea')
+      textarea.value = url
+      textarea.style.position = 'fixed'
+      textarea.style.left = '-9999px'
+      document.body.appendChild(textarea)
+      textarea.focus()
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      alert('Link copiado!')
+    } catch {
+      alert(url)
+    }
+  }, [selectedPhoto])
 
   // Championships Data
   const [championships] = useState<Championship[]>([
@@ -1058,7 +1119,6 @@ function App() {
 
           {/* Friends Gallery Icons - Small Icons Row */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-gray-700 mb-2">Friends Gallery</h3>
             <div className="flex gap-3 justify-center">
               <button 
                 onClick={() => {
@@ -1100,24 +1160,8 @@ function App() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <h3 className="text-sm font-bold text-gray-700">Gallery</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-blue-600 font-semibold">Marcações de amigos</span>
-                  <div className="flex items-center gap-1">
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 backdrop-blur-md border border-white/50 shadow-sm">
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center text-[9px] font-bold">JF</div>
-                      <span className="text-[10px] font-semibold text-gray-700">John</span>
-                    </div>
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 backdrop-blur-md border border-white/50 shadow-sm">
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-green-400 to-green-600 text-white flex items-center justify-center text-[9px] font-bold">MW</div>
-                      <span className="text-[10px] font-semibold text-gray-700">Mike</span>
-                    </div>
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 backdrop-blur-md border border-white/50 shadow-sm">
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 text-white flex items-center justify-center text-[9px] font-bold">SO</div>
-                      <span className="text-[10px] font-semibold text-gray-700">Sarah</span>
-                    </div>
-                  </div>
-                </div>
               </div>
+
               <button
                 onClick={() => setShowAIScanner(true)}
                 className="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1"
@@ -2899,24 +2943,91 @@ function App() {
                 </button>
               </>
             )}
-            <img 
-              src={selectedPhoto.url} 
-              alt={`Catch ${selectedPhoto.catchId}`}
-              className="w-full h-auto rounded-2xl shadow-2xl"
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-2xl">
-              <p className="text-white text-lg font-bold">
-                {new Date(selectedPhoto.date).toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
-              <p className="text-gray-300 text-sm mt-1">
-                {typeof selectedPhoto.weight === 'number' ? `${selectedPhoto.weight} kg` : '—'}
-                {selectedPhoto.friendName ? ` • ${selectedPhoto.friendName}` : selectedPhoto.catchId ? ` • Catch #${selectedPhoto.catchId}` : ''}
-              </p>
+            <div className="bg-black/0">
+              <div className="relative">
+                <img 
+                  src={selectedPhoto.url} 
+                  alt={`Catch ${selectedPhoto.catchId}`}
+                  className="w-full h-auto rounded-2xl shadow-2xl"
+                />
+
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-2xl">
+                  <p className="text-white text-lg font-bold">
+                    {new Date(selectedPhoto.date).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                  <p className="text-gray-300 text-sm mt-1">
+                    {typeof selectedPhoto.weight === 'number' ? `${selectedPhoto.weight} kg` : '—'}
+                    {selectedPhoto.friendName ? ` • ${selectedPhoto.friendName}` : selectedPhoto.catchId ? ` • Catch #${selectedPhoto.catchId}` : ''}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl p-3">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => handleToggleLikePhoto(selectedPhoto.id)}
+                    className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                    aria-label="Curtir"
+                  >
+                    <Heart className={`w-6 h-6 ${photoLikes[selectedPhoto.id] ? 'fill-red-500 text-red-500' : ''}`} />
+                    <span className="text-sm font-semibold">Curtir</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowPhotoComments((v) => !v)}
+                    className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                    aria-label="Comentar"
+                  >
+                    <MessageCircle className="w-6 h-6" />
+                    <span className="text-sm font-semibold">Comentar</span>
+                  </button>
+
+                  <button
+                    onClick={handleShareSelectedPhoto}
+                    className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                    aria-label="Compartilhar"
+                  >
+                    <Share2 className="w-6 h-6" />
+                    <span className="text-sm font-semibold">Compartilhar</span>
+                  </button>
+                </div>
+
+                {showPhotoComments && (
+                  <div className="mt-3">
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {(photoComments[selectedPhoto.id] || []).map((c, idx) => (
+                        <div key={idx} className="text-sm text-white/90 bg-white/10 border border-white/10 rounded-xl px-3 py-2">
+                          {c}
+                        </div>
+                      ))}
+                      {(photoComments[selectedPhoto.id] || []).length === 0 && (
+                        <div className="text-sm text-white/60">Sem comentários ainda</div>
+                      )}
+                    </div>
+
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Adicionar um comentário..."
+                        value={newPhotoComment}
+                        onChange={(e) => setNewPhotoComment(e.target.value)}
+                        className="flex-1 p-3 rounded-xl bg-white/10 border border-white/15 text-white placeholder:text-white/50 outline-none"
+                      />
+                      <button
+                        onClick={() => handleAddPhotoComment(selectedPhoto.id)}
+                        className="px-4 rounded-xl bg-white text-gray-900 font-semibold hover:bg-gray-100 transition-colors"
+                      >
+                        Enviar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
