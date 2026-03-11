@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Fish, MapPin, Cloud, Sun, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, MessageSquare, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
+import { Fish, MapPin, Cloud, Sun, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -140,6 +140,7 @@ function App() {
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [showTips, setShowTips] = useState(false)
   const [showAIScanner, setShowAIScanner] = useState(false)
+  const [mapSpot, setMapSpot] = useState<FishingSpot | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoGallery | null>(null)
   const [galleryMode, setGalleryMode] = useState<'mine' | 'friends'>('mine')
   const [photoLikes, setPhotoLikes] = useState<Record<number, boolean>>({})
@@ -1047,7 +1048,7 @@ function App() {
     <div className="min-h-screen pb-24 relative" style={{ background: "linear-gradient(180deg, hsl(200 60% 85%) 0%, hsl(175 50% 70%) 100%)" }}>
       {/* Background Image with Opacity and Wave Animation */}
       <div 
-        className="fixed inset-0 z-0 bg-cover bg-center ocean-wave"
+        className="fixed inset-0 z-0 bg-cover bg-center ocean-wave pointer-events-none"
         style={{ 
           backgroundImage: "url('/Fundo.jpg')",
           opacity: 0.3
@@ -1635,17 +1636,97 @@ function App() {
                     <span className="font-bold text-gray-700">{spot.rating}</span>
                   </div>
                 </div>
-                <button 
-                  onClick={() => {
-                    const url = `https://www.google.com/maps/search/?api=1&query=${spot.latitude},${spot.longitude}`;
-                    window.open(url, '_blank');
-                  }}
+                <button
+                  type="button"
+                  onClick={() => setMapSpot(spot)}
                   className="w-full bg-blue-800 text-white py-2 rounded-xl font-semibold hover:bg-blue-900 transition-colors active:scale-95"
                 >
                   Ver no Mapa
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {mapSpot && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999] p-4"
+          onClick={(e) => {
+            if (e.target !== e.currentTarget) return
+            setMapSpot(null)
+          }}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative h-[58vh] bg-gradient-to-br from-slate-100 to-slate-200">
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    'radial-gradient(circle at 20% 20%, rgba(59,130,246,0.18), transparent 45%), radial-gradient(circle at 80% 35%, rgba(16,185,129,0.18), transparent 40%), radial-gradient(circle at 45% 75%, rgba(99,102,241,0.18), transparent 45%)'
+                }}
+              />
+
+              <div className="absolute top-3 left-3 right-3 flex items-center gap-2">
+                <button
+                  onClick={() => setMapSpot(null)}
+                  className="bg-white/90 backdrop-blur-md rounded-full px-3 py-2 text-sm font-bold text-gray-800 shadow"
+                  aria-label="Voltar"
+                >
+                  ←
+                </button>
+                <div className="flex-1 bg-white/90 backdrop-blur-md rounded-2xl px-3 py-2 shadow">
+                  <div className="text-sm font-bold text-gray-900 truncate">{mapSpot.name}</div>
+                  <div className="text-[11px] text-gray-600 truncate">Lat {mapSpot.latitude.toFixed(5)} • Lon {mapSpot.longitude.toFixed(5)}</div>
+                </div>
+              </div>
+
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-blue-600/20" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full bg-blue-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute bottom-0 left-0 right-0 p-3">
+                <div className="bg-white/95 backdrop-blur-md rounded-3xl p-4 shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-gray-900">{mapSpot.distance.toFixed(1)} km</div>
+                      <div className="text-xs text-gray-600">ETA: {Math.max(6, Math.round(mapSpot.distance * 3))} min</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs font-semibold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full">
+                        {mapSpot.catches} capturas
+                      </div>
+                      <div className="text-xs font-semibold text-amber-800 bg-amber-100 px-3 py-1.5 rounded-full">
+                        ★ {mapSpot.rating.toFixed(1)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button className="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold hover:bg-blue-700 transition-colors">
+                      Iniciar
+                    </button>
+                    <button
+                      onClick={() => {
+                        const url = `https://www.google.com/maps/search/?api=1&query=${mapSpot.latitude},${mapSpot.longitude}`
+                        window.open(url, '_blank')
+                      }}
+                      className="w-full bg-gray-100 text-gray-800 py-3 rounded-2xl font-bold hover:bg-gray-200 transition-colors"
+                    >
+                      Abrir no Maps
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -3431,14 +3512,14 @@ function App() {
             <span className="text-[9px] font-medium">Liga</span>
           </button>
           <button
-            onClick={() => setActiveTab('community')}
+            onClick={() => setActiveTab('spots')}
             className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{ 
-              color: activeTab === 'community' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+              color: activeTab === 'spots' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
           >
-            <MessageSquare className={`w-5 h-5 ${activeTab === 'community' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[9px] font-medium">Fórum</span>
+            <MapPin className={`w-5 h-5 ${activeTab === 'spots' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <span className="text-[9px] font-medium">Lugares</span>
           </button>
           <button
             onClick={() => setActiveTab('community')}
