@@ -1,0 +1,1398 @@
+openapi: 3.0.3
+info:
+  title: Fishing App API
+  version: 0.1.0
+  description: Fishing App backend API (MVP)
+servers:
+  - url: http://localhost:3001
+    description: Local
+  - url: https://api.example.com
+    description: Production (placeholder)
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Users
+  - name: Catches
+  - name: Spots
+  - name: Weather
+  - name: Tides
+  - name: Media
+  - name: Leagues
+  - name: Championships
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - timestamp
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/auth/otp/request:
+    post:
+      tags:
+        - Auth
+      summary: Request OTP for phone login
+      operationId: requestOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpRequest'
+      responses:
+        '204':
+          description: OTP sent
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/otp/verify:
+    post:
+      tags:
+        - Auth
+      summary: Verify OTP and obtain tokens
+      operationId: verifyOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpVerifyRequest'
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Logout (revoke refresh token)
+      operationId: logout
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '204':
+          description: Logged out
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/catches:
+    get:
+      tags:
+        - Catches
+      summary: List catches
+      operationId: listCatches
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: Cursor pagination token
+      responses:
+        '200':
+          description: A list of catches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCatches'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Catches
+      summary: Create a catch
+      operationId: createCatch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatchCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/catches/{catchId}:
+    parameters:
+      - in: path
+        name: catchId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Catches
+      summary: Get a catch
+      operationId: getCatch
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Catch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Catches
+      summary: Update a catch
+      operationId: updateCatch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatchUpdate'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Catches
+      summary: Delete a catch
+      operationId: deleteCatch
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/spots:
+    get:
+      tags:
+        - Spots
+      summary: List fishing spots
+      operationId: listSpots
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of spots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Spot'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Spots
+      summary: Create a fishing spot
+      operationId: createSpot
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpotCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Spot'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/spots/{spotId}:
+    parameters:
+      - in: path
+        name: spotId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Spots
+      summary: Get a fishing spot
+      operationId: getSpot
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Spot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Spot'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Spots
+      summary: Update a fishing spot
+      operationId: updateSpot
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpotUpdate'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Spot'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Spots
+      summary: Delete a fishing spot
+      operationId: deleteSpot
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/weather/current:
+    get:
+      tags:
+        - Weather
+      summary: Get current weather
+      operationId: getCurrentWeather
+      responses:
+        '200':
+          description: Weather
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherCurrent'
+
+  /api/weather/forecast:
+    get:
+      tags:
+        - Weather
+      summary: Get forecast
+      operationId: getForecast
+      responses:
+        '200':
+          description: Forecast
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherForecast'
+
+  /api/tides/current:
+    get:
+      tags:
+        - Tides
+      summary: Get current tides (proxy/cache)
+      operationId: getCurrentTides
+      parameters:
+        - in: query
+          name: lat
+          required: true
+          schema:
+            type: number
+            format: double
+        - in: query
+          name: lon
+          required: true
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: Tides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TidesCurrent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/media/presign:
+    post:
+      tags:
+        - Media
+      summary: Create a pre-signed upload URL for S3/R2
+      operationId: createPresignedUpload
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresignRequest'
+      responses:
+        '200':
+          description: Presigned upload info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/leagues:
+    get:
+      tags:
+        - Leagues
+      summary: List leagues
+      operationId: listLeagues
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: visibility
+          schema:
+            type: string
+            enum: [public, private]
+      responses:
+        '200':
+          description: Leagues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/League'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Leagues
+      summary: Create league
+      operationId: createLeague
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeagueCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/League'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/leagues/{leagueId}:
+    parameters:
+      - in: path
+        name: leagueId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Leagues
+      summary: Get league
+      operationId: getLeague
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: League
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/League'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Leagues
+      summary: Update league
+      operationId: updateLeague
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeagueUpdate'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/League'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Leagues
+      summary: Delete league
+      operationId: deleteLeague
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/leagues/{leagueId}/join:
+    post:
+      tags:
+        - Leagues
+      summary: Join a league
+      operationId: joinLeague
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: leagueId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeagueJoinRequest'
+      responses:
+        '204':
+          description: Joined
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/leagues/{leagueId}/ranking:
+    get:
+      tags:
+        - Leagues
+      summary: Get league ranking
+      operationId: getLeagueRanking
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: leagueId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ranking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeagueRanking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/championships:
+    get:
+      tags:
+        - Championships
+      summary: List championships (tournaments)
+      operationId: listChampionships
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Championships
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Championship'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/championships/{championshipId}:
+    parameters:
+      - in: path
+        name: championshipId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Championships
+      summary: Get championship
+      operationId: getChampionship
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Championship
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Championship'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/championships/{championshipId}/register:
+    post:
+      tags:
+        - Championships
+      summary: Register in a championship
+      operationId: registerChampionship
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: championshipId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChampionshipRegistrationCreate'
+      responses:
+        '201':
+          description: Registration created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChampionshipRegistration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TooManyRequests:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: bad_request
+            message:
+              type: string
+              example: Invalid input
+            details:
+              type: object
+              additionalProperties: true
+
+    PhoneNumberE164:
+      type: string
+      example: +5511999999999
+      description: Phone number in E.164
+
+    UUID:
+      type: string
+      format: uuid
+
+    ISODateTime:
+      type: string
+      format: date-time
+
+    OtpRequest:
+      type: object
+      required:
+        - phone
+      properties:
+        phone:
+          $ref: '#/components/schemas/PhoneNumberE164'
+
+    OtpVerifyRequest:
+      type: object
+      required:
+        - phone
+        - otp
+      properties:
+        phone:
+          $ref: '#/components/schemas/PhoneNumberE164'
+        otp:
+          type: string
+          minLength: 4
+          maxLength: 8
+          example: '123456'
+
+    RefreshRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    LogoutRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    AuthTokensResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+
+    User:
+      type: object
+      required:
+        - id
+        - phone
+        - createdAt
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        phone:
+          $ref: '#/components/schemas/PhoneNumberE164'
+        displayName:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          nullable: true
+        createdAt:
+          $ref: '#/components/schemas/ISODateTime'
+
+    Catch:
+      type: object
+      required:
+        - id
+        - userId
+        - species
+        - date
+        - createdAt
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        userId:
+          $ref: '#/components/schemas/UUID'
+        species:
+          type: string
+          example: Robalo
+        weightKg:
+          type: number
+          format: float
+          nullable: true
+          example: 2.4
+        lengthCm:
+          type: number
+          format: float
+          nullable: true
+          example: 55
+        locationText:
+          type: string
+          nullable: true
+          example: Praia do Forte
+        spotId:
+          $ref: '#/components/schemas/UUID'
+          nullable: true
+        caughtAt:
+          $ref: '#/components/schemas/ISODateTime'
+          nullable: true
+        weatherText:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatchPhoto'
+        createdAt:
+          $ref: '#/components/schemas/ISODateTime'
+        updatedAt:
+          $ref: '#/components/schemas/ISODateTime'
+          nullable: true
+
+    CatchCreate:
+      type: object
+      required:
+        - species
+      properties:
+        species:
+          type: string
+        weightKg:
+          type: number
+          format: float
+          nullable: true
+        lengthCm:
+          type: number
+          format: float
+          nullable: true
+        locationText:
+          type: string
+          nullable: true
+        spotId:
+          $ref: '#/components/schemas/UUID'
+          nullable: true
+        caughtAt:
+          $ref: '#/components/schemas/ISODateTime'
+          nullable: true
+        weatherText:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        photoIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/UUID'
+
+    CatchUpdate:
+      type: object
+      properties:
+        species:
+          type: string
+        weightKg:
+          type: number
+          format: float
+          nullable: true
+        lengthCm:
+          type: number
+          format: float
+          nullable: true
+        locationText:
+          type: string
+          nullable: true
+        spotId:
+          $ref: '#/components/schemas/UUID'
+          nullable: true
+        caughtAt:
+          $ref: '#/components/schemas/ISODateTime'
+          nullable: true
+        weatherText:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        photoIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/UUID'
+
+    CatchPhoto:
+      type: object
+      required:
+        - id
+        - url
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        storageKey:
+          type: string
+          nullable: true
+        url:
+          type: string
+
+    PaginatedCatches:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Catch'
+        nextCursor:
+          type: string
+          nullable: true
+
+    Spot:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        lat:
+          type: number
+          format: double
+          nullable: true
+        lon:
+          type: number
+          format: double
+          nullable: true
+        createdAt:
+          $ref: '#/components/schemas/ISODateTime'
+        updatedAt:
+          $ref: '#/components/schemas/ISODateTime'
+          nullable: true
+
+    SpotCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        lat:
+          type: number
+          format: double
+          nullable: true
+        lon:
+          type: number
+          format: double
+          nullable: true
+
+    SpotUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        lat:
+          type: number
+          format: double
+          nullable: true
+        lon:
+          type: number
+          format: double
+          nullable: true
+
+    WeatherCurrent:
+      type: object
+      properties:
+        temp:
+          type: number
+          format: float
+        windSpeed:
+          type: number
+          format: float
+        windDirection:
+          type: string
+        waveHeight:
+          type: number
+          format: float
+        pressure:
+          type: number
+          format: float
+        humidity:
+          type: number
+          format: float
+        visibility:
+          type: number
+          format: float
+        fishingCondition:
+          type: string
+          nullable: true
+        sunrise:
+          type: string
+          nullable: true
+
+    WeatherForecast:
+      type: object
+      required:
+        - today
+        - tomorrow
+        - dayAfter
+      properties:
+        today:
+          $ref: '#/components/schemas/WeatherCurrent'
+        tomorrow:
+          $ref: '#/components/schemas/WeatherCurrent'
+        dayAfter:
+          $ref: '#/components/schemas/WeatherCurrent'
+
+    TidesCurrent:
+      type: object
+      properties:
+        station:
+          type: string
+          nullable: true
+        currentHeightM:
+          type: number
+          format: float
+          nullable: true
+        nextHighAt:
+          $ref: '#/components/schemas/ISODateTime'
+          nullable: true
+        nextLowAt:
+          $ref: '#/components/schemas/ISODateTime'
+          nullable: true
+
+    PresignRequest:
+      type: object
+      required:
+        - contentType
+      properties:
+        contentType:
+          type: string
+          example: image/jpeg
+        fileName:
+          type: string
+          nullable: true
+        folder:
+          type: string
+          nullable: true
+          example: catches
+
+    PresignResponse:
+      type: object
+      required:
+        - uploadUrl
+        - method
+        - headers
+        - fileId
+        - publicUrl
+      properties:
+        uploadUrl:
+          type: string
+        method:
+          type: string
+          example: PUT
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        fileId:
+          $ref: '#/components/schemas/UUID'
+        storageKey:
+          type: string
+          nullable: true
+        publicUrl:
+          type: string
+
+    League:
+      type: object
+      required:
+        - id
+        - name
+        - visibility
+        - createdAt
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        visibility:
+          type: string
+          enum: [public, private]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        entryFeeCentsFictional:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Fictitious amount used for ranking/prize display only
+        prizePoolCentsFictional:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Derived fictitious pool (e.g., entryFee * members)
+        rules:
+          type: string
+          nullable: true
+        createdByUserId:
+          $ref: '#/components/schemas/UUID'
+          nullable: true
+        createdAt:
+          $ref: '#/components/schemas/ISODateTime'
+        updatedAt:
+          $ref: '#/components/schemas/ISODateTime'
+          nullable: true
+
+    LeagueCreate:
+      type: object
+      required:
+        - name
+        - visibility
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        visibility:
+          type: string
+          enum: [public, private]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        entryFeeCentsFictional:
+          type: integer
+          minimum: 0
+          nullable: true
+        rules:
+          type: string
+          nullable: true
+
+    LeagueUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        visibility:
+          type: string
+          enum: [public, private]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        entryFeeCentsFictional:
+          type: integer
+          minimum: 0
+          nullable: true
+        rules:
+          type: string
+          nullable: true
+
+    LeagueJoinRequest:
+      type: object
+      properties:
+        inviteCode:
+          type: string
+          nullable: true
+
+    LeagueRanking:
+      type: object
+      required:
+        - leagueId
+        - items
+      properties:
+        leagueId:
+          $ref: '#/components/schemas/UUID'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeagueRankingItem'
+
+    LeagueRankingItem:
+      type: object
+      required:
+        - userId
+        - score
+        - position
+      properties:
+        userId:
+          $ref: '#/components/schemas/UUID'
+        displayName:
+          type: string
+          nullable: true
+        position:
+          type: integer
+          minimum: 1
+        score:
+          type: number
+          format: float
+          description: Points derived from catches (e.g., weight)
+        totalWeightKg:
+          type: number
+          format: float
+          nullable: true
+        catchesCount:
+          type: integer
+          nullable: true
+
+    Championship:
+      type: object
+      required:
+        - id
+        - name
+        - date
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        location:
+          type: string
+          nullable: true
+        entryFeeCentsFictional:
+          type: integer
+          minimum: 0
+          nullable: true
+        prizePoolCentsFictional:
+          type: integer
+          minimum: 0
+          nullable: true
+        maxParticipants:
+          type: integer
+          minimum: 1
+          nullable: true
+        createdAt:
+          $ref: '#/components/schemas/ISODateTime'
+          nullable: true
+
+    ChampionshipRegistrationCreate:
+      type: object
+      properties:
+        paymentReference:
+          type: string
+          nullable: true
+          description: Optional reference for fictitious payment record
+
+    ChampionshipRegistration:
+      type: object
+      required:
+        - id
+        - championshipId
+        - userId
+        - createdAt
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        championshipId:
+          $ref: '#/components/schemas/UUID'
+        userId:
+          $ref: '#/components/schemas/UUID'
+        createdAt:
+          $ref: '#/components/schemas/ISODateTime'
+
+security:
+  - bearerAuth: []
