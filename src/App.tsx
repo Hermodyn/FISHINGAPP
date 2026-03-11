@@ -42,6 +42,7 @@ interface PhotoGallery {
   date: string
   weight?: number
   friendName?: string
+  caption?: string
 }
 
 interface Championship {
@@ -131,6 +132,7 @@ function App() {
   const [galleryMode, setGalleryMode] = useState<'mine' | 'friends'>('mine')
   const [photoLikes, setPhotoLikes] = useState<Record<number, boolean>>({})
   const [photoComments, setPhotoComments] = useState<Record<number, string[]>>({})
+  const [photoCaptions, setPhotoCaptions] = useState<Record<number, string>>({})
   const [showPhotoComments, setShowPhotoComments] = useState(false)
   const [newPhotoComment, setNewPhotoComment] = useState('')
   const [registerLoading, setRegisterLoading] = useState(false)
@@ -362,10 +364,10 @@ function App() {
 
   // V2.0 - Photo Gallery Data
   const [photoGallery] = useState<PhotoGallery[]>([
-    { id: 1, url: '/home-gallery/ayoub-allaoui-r4UnstvRgkE-unsplash.jpg', catchId: 1, date: '2026-02-15' },
-    { id: 2, url: '/home-gallery/cast-spear-hApQr0GDDP8-unsplash.jpg', catchId: 2, date: '2026-02-14' },
-    { id: 3, url: '/home-gallery/clay-knight-Gn5i7ZWw00I-unsplash.jpg', catchId: 1, date: '2026-02-13' },
-    { id: 4, url: '/home-gallery/diego-rubilar-NwEUY1xts1U-unsplash.jpg', catchId: 3, date: '2026-02-12' },
+    { id: 1, url: '/home-gallery/ayoub-allaoui-r4UnstvRgkE-unsplash.jpg', catchId: 1, date: '2026-02-15', caption: 'Amanhecer perfeito na beira do mar' },
+    { id: 2, url: '/home-gallery/cast-spear-hApQr0GDDP8-unsplash.jpg', catchId: 2, date: '2026-02-14', caption: 'Tentativa com lança — água bem clara' },
+    { id: 3, url: '/home-gallery/clay-knight-Gn5i7ZWw00I-unsplash.jpg', catchId: 1, date: '2026-02-13', caption: 'Dia de vento, mas rendeu boas fotos' },
+    { id: 4, url: '/home-gallery/diego-rubilar-NwEUY1xts1U-unsplash.jpg', catchId: 3, date: '2026-02-12', caption: 'Ponto novo testado hoje — promissor' },
     { id: 5, url: '/home-gallery/drew-farwell-0C20qeLQwi8-unsplash.jpg', catchId: 2, date: '2026-02-11' },
     { id: 6, url: '/home-gallery/jack-murrey-SIj8yWcxC0k-unsplash.jpg', catchId: 3, date: '2026-02-10' },
     { id: 7, url: '/home-gallery/jeff-vanderspank-8jh4zljhyDg-unsplash.jpg', catchId: 1, date: '2026-02-09' },
@@ -465,6 +467,26 @@ function App() {
     setShowPhotoComments(false)
     setNewPhotoComment('')
   }, [selectedPhoto])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('fishingapp.photoCaptions.v1')
+      if (!raw) return
+      const parsed = JSON.parse(raw) as unknown
+      if (!parsed || typeof parsed !== 'object') return
+      setPhotoCaptions(parsed as Record<number, string>)
+    } catch {
+      return
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('fishingapp.photoCaptions.v1', JSON.stringify(photoCaptions))
+    } catch {
+      return
+    }
+  }, [photoCaptions])
 
   const handleToggleLikePhoto = useCallback((photoId: number) => {
     setPhotoLikes((prev) => ({ ...prev, [photoId]: !prev[photoId] }))
@@ -1122,15 +1144,21 @@ function App() {
             <div className="flex gap-3 justify-center">
               <button 
                 onClick={() => {
-                  const mostRecent = photoGallery.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                  setSelectedPhoto(mostRecent);
+                  const mostRecent = photoGallery
+                    .slice()
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+
+                  if (!mostRecent) return
+                  setSelectedPhoto(mostRecent)
                 }}
                 className="w-16 h-16 bg-white rounded-xl shadow-md overflow-hidden border-2 border-gray-100 hover:scale-105 transition-all relative"
               >
                 {photoGallery.length > 0 && (
                   <>
                     <img 
-                      src={photoGallery.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].url}
+                      src={photoGallery
+                        .slice()
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].url}
                       alt="Most recent"
                       className="w-full h-full object-cover"
                     />
@@ -1159,7 +1187,7 @@ function App() {
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
-                <h3 className="text-sm font-bold text-gray-700">Gallery</h3>
+                <h3 className="text-sm font-bold text-gray-700"></h3>
               </div>
 
               <button
@@ -2972,7 +3000,7 @@ function App() {
           className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" 
           onClick={() => setSelectedPhoto(null)}
         >
-          <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="relative max-w-4xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setSelectedPhoto(null)}
               className="absolute -top-12 right-0 text-white text-4xl hover:text-gray-300 transition-colors"
@@ -2989,7 +3017,7 @@ function App() {
                     const next = (idx - 1 + zoomGalleryPhotos.length) % zoomGalleryPhotos.length
                     setSelectedPhoto(zoomGalleryPhotos[next])
                   }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors"
+                  className="absolute z-20 pointer-events-auto left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors"
                   aria-label="Foto anterior"
                 >
                   <ChevronLeft className="w-7 h-7" />
@@ -3001,19 +3029,19 @@ function App() {
                     const next = (idx + 1) % zoomGalleryPhotos.length
                     setSelectedPhoto(zoomGalleryPhotos[next])
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors"
+                  className="absolute z-20 pointer-events-auto right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors"
                   aria-label="Próxima foto"
                 >
                   <ChevronRight className="w-7 h-7" />
                 </button>
               </>
             )}
-            <div className="bg-black/0">
+            <div className="relative z-10 bg-black/0 max-h-[90vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
               <div className="relative">
                 <img 
                   src={selectedPhoto.url} 
                   alt={`Catch ${selectedPhoto.catchId}`}
-                  className="w-full h-auto rounded-2xl shadow-2xl"
+                  className="w-full max-h-[70vh] object-contain rounded-2xl shadow-2xl"
                 />
 
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-2xl">
@@ -3033,6 +3061,18 @@ function App() {
               </div>
 
               <div className="mt-3 bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl p-3">
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    placeholder="Adicionar legenda..."
+                    value={photoCaptions[selectedPhoto.id] ?? selectedPhoto.caption ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setPhotoCaptions((prev) => ({ ...prev, [selectedPhoto.id]: v }))
+                    }}
+                    className="w-full p-3 rounded-xl bg-white/10 border border-white/15 text-white placeholder:text-white/50 outline-none"
+                  />
+                </div>
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => handleToggleLikePhoto(selectedPhoto.id)}
