@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
+import { Fish, MapPin, Cloud, Sun, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, MessageSquare, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -65,6 +65,18 @@ interface Sponsor {
   discount?: string
 }
 
+interface CommunityPost {
+  id: number
+  name: string
+  handle: string
+  time: string
+  text: string
+  link?: string
+  replies: number
+  likes: number
+  reposts: number
+}
+
 interface SubscriptionPlan {
   id: number
   name: string
@@ -124,7 +136,7 @@ interface League {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'sponsors' | 'subscription' | 'community' | 'leagues' | 'stats' | 'weather' | 'friendsGallery'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'subscription' | 'community' | 'leagues' | 'stats' | 'weather' | 'friendsGallery'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [showTips, setShowTips] = useState(false)
   const [showAIScanner, setShowAIScanner] = useState(false)
@@ -549,29 +561,72 @@ function App() {
     { id: 2, name: 'Marine Pro', type: 'factory', logo: '🏭', description: 'Premium fishing rods and reels manufacturer', discount: '15% OFF' },
     { id: 3, name: 'FishTech', type: 'factory', logo: '⚙️', description: 'Advanced fishing electronics and accessories' },
     { id: 4, name: 'Troféu Dourado', type: 'prize', logo: '🏆', description: 'Official championship prizes and awards supplier' },
-    { id: 5, name: 'Anzol Forte', type: 'store', logo: '🎣', description: 'Hooks, lines, and baits specialist', discount: '10% OFF' }
+    { id: 5, name: 'Anzol Forte', type: 'store', logo: '🪝', description: 'Hooks, lines, and baits specialist', discount: '10% OFF' }
   ])
 
-  // Subscription Plans Data
   const [subscriptionPlans] = useState<SubscriptionPlan[]>([
-    { 
-      id: 1, 
-      name: 'Free', 
-      price: 'R$ 0/month', 
+    {
+      id: 1,
+      name: 'Free',
+      price: 'R$ 0/month',
       features: ['Basic catch logging', 'View public spots', 'Community forum access', 'Up to 10 photos']
     },
-    { 
-      id: 2, 
-      name: 'Pro', 
-      price: 'R$ 19.90/month', 
+    {
+      id: 2,
+      name: 'Pro',
+      price: 'R$ 19.90/month',
       features: ['Unlimited catch logging', 'Advanced statistics', 'AI Fish Scanner', 'Unlimited photos', 'Priority support', 'Ad-free experience'],
       popular: true
     },
-    { 
-      id: 3, 
-      name: 'Premium', 
-      price: 'R$ 39.90/month', 
+    {
+      id: 3,
+      name: 'Premium',
+      price: 'R$ 39.90/month',
       features: ['All Pro features', 'Championship registration', 'Exclusive sponsor discounts', 'Weather predictions', 'Private fishing groups', 'Coaching sessions']
+    }
+  ])
+
+  const [communityPosts] = useState<CommunityPost[]>([
+    {
+      id: 1,
+      name: 'Rafa Pescador',
+      handle: '@rafapesca',
+      time: '2h',
+      text: 'Dica rápida: na maré vazante, tenta trabalhar a isca mais lento e perto das estruturas. Aqui funcionou bem com camarão artificial. 🎣',
+      replies: 12,
+      likes: 84,
+      reposts: 9
+    },
+    {
+      id: 2,
+      name: 'Marina Costa',
+      handle: '@marinacosta',
+      time: '4h',
+      text: 'Qual o melhor nó pra leader fluorocarbon com multifilamento? Estou usando FG, mas às vezes escorrega se eu não aperto bem.',
+      replies: 39,
+      likes: 102,
+      reposts: 7
+    },
+    {
+      id: 3,
+      name: 'Dicas do Mar',
+      handle: '@dicasdomar',
+      time: '6h',
+      text: 'Mapa de vento/ondas (bem útil antes de sair). Vale conferir antes de escolher o ponto.',
+      link: 'https://www.windy.com/',
+      replies: 8,
+      likes: 56,
+      reposts: 11
+    },
+    {
+      id: 4,
+      name: 'João do Tucunaré',
+      handle: '@joaotucunare',
+      time: '1d',
+      text: 'Opinião: mais importante que o equipamento é constância. Mesma isca, mesmo ponto, mudando só o ângulo e velocidade. Uma hora o peixe reage.',
+      replies: 21,
+      likes: 190,
+      reposts: 25
     }
   ])
 
@@ -1143,30 +1198,10 @@ function App() {
           <div className="mb-4">
             <div className="flex gap-3 justify-center">
               <button 
-                onClick={() => {
-                  const mostRecent = photoGallery
-                    .slice()
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
-
-                  if (!mostRecent) return
-                  setSelectedPhoto(mostRecent)
-                }}
-                className="w-16 h-16 bg-white rounded-xl shadow-md overflow-hidden border-2 border-gray-100 hover:scale-105 transition-all relative"
+                onClick={() => setActiveTab('weather')}
+                className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
               >
-                {photoGallery.length > 0 && (
-                  <>
-                    <img 
-                      src={photoGallery
-                        .slice()
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].url}
-                      alt="Most recent"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      <Camera className="w-6 h-6 text-white drop-shadow-lg" />
-                    </div>
-                  </>
-                )}
+                <Sun className="w-7 h-7 text-blue-600" />
               </button>
               <button 
                 onClick={() => setActiveTab('spots')}
@@ -1543,6 +1578,43 @@ function App() {
           </div>
 
           <div className="p-4 space-y-3">
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800">Parceiros perto de você</h3>
+                  <p className="text-xs text-gray-500">Descontos e indicações sutis</p>
+                </div>
+                <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-full">benefícios</span>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {sponsors.slice(0, 4).map((sponsor) => (
+                  <div key={sponsor.id} className="min-w-[220px] bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl border border-indigo-100 flex-shrink-0">
+                        {sponsor.logo}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm font-bold text-gray-800 truncate">{sponsor.name}</div>
+                          {sponsor.discount && (
+                            <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
+                              {sponsor.discount}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-600 line-clamp-2">{sponsor.description}</div>
+                        <div className="mt-2">
+                          <button className="text-xs font-semibold text-indigo-700 hover:text-indigo-800 underline underline-offset-2">
+                            Ver ofertas
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {sortedSpots.map((spot, index) => (
               <div key={spot.id} className="bg-white p-5 rounded-2xl shadow-md">
                 <div className="flex justify-between items-start mb-3">
@@ -1712,7 +1784,7 @@ function App() {
               </div>
               
               <div className="space-y-3 mt-3">
-                {subscriptionPlans.map((plan) => (
+                {subscriptionPlans.map((plan: SubscriptionPlan) => (
                   <div 
                     key={plan.id} 
                     className={`bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-shadow ${
@@ -1736,7 +1808,7 @@ function App() {
                       )}
                     </div>
                     <ul className="space-y-2 mb-4">
-                      {plan.features.map((feature, idx) => (
+                      {plan.features.map((feature: string, idx: number) => (
                         <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
                           <span className="text-green-500 font-bold mt-0.5">✓</span>
                           <span>{feature}</span>
@@ -2264,53 +2336,57 @@ function App() {
         <div className="pb-20 max-w-2xl mx-auto">
           <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6 rounded-b-3xl shadow-lg">
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <MessageSquare className="w-7 h-7" />
-              Fórum da Comunidade
+              <Users className="w-7 h-7" />
+              Amigos
             </h1>
-            <p className="text-purple-100 text-sm mt-1">Compartilhe experiências e aprenda com outros pescadores</p>
+            <p className="text-purple-100 text-sm mt-1">Dicas, opiniões, links e comentários</p>
           </div>
 
-          <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
-            <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <MessageSquare className="w-12 h-12 text-purple-600" />
-              </div>
-              
-              <h2 className="text-2xl font-bold text-gray-800 mb-3">Em Breve!</h2>
-              <p className="text-gray-600 mb-6">
-                Estamos criando um espaço para você compartilhar dicas, histórias e se conectar com outros pescadores.
-              </p>
+          <div className="p-4 space-y-3">
+            {communityPosts.map((post) => (
+              <div key={post.id} className="bg-white rounded-2xl shadow-md p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 border border-purple-200 flex items-center justify-center font-bold text-purple-800 flex-shrink-0">
+                    {(post.name.split(' ')[0]?.[0] || 'P') + (post.name.split(' ')[1]?.[0] || '')}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-gray-900">{post.name}</span>
+                      <span className="text-sm text-gray-500">{post.handle}</span>
+                      <span className="text-sm text-gray-400">• {post.time}</span>
+                    </div>
+                    <div className="mt-2 text-sm text-gray-800 leading-relaxed">
+                      {post.text}
+                    </div>
+                    {post.link && (
+                      <a
+                        href={post.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 block text-sm text-blue-700 hover:underline break-all"
+                      >
+                        {post.link}
+                      </a>
+                    )}
 
-              <div className="space-y-3 mb-6">
-                <div className="bg-purple-50 p-4 rounded-xl text-left">
-                  <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5" />
-                    Posts e Discussões
-                  </h3>
-                  <p className="text-sm text-gray-700">Compartilhe suas experiências e aprenda com a comunidade.</p>
+                    <div className="mt-3 flex items-center justify-between text-gray-500">
+                      <button className="flex items-center gap-2 text-xs font-semibold hover:text-gray-700">
+                        <MessageCircle className="w-4 h-4" />
+                        {post.replies}
+                      </button>
+                      <button className="flex items-center gap-2 text-xs font-semibold hover:text-gray-700">
+                        <Share2 className="w-4 h-4" />
+                        {post.reposts}
+                      </button>
+                      <button className="flex items-center gap-2 text-xs font-semibold hover:text-gray-700">
+                        <Heart className="w-4 h-4" />
+                        {post.likes}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="bg-indigo-50 p-4 rounded-xl text-left">
-                  <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    Conecte-se
-                  </h3>
-                  <p className="text-sm text-gray-700">Faça amizade com pescadores da sua região e marque pescarias.</p>
-                </div>
-
-                <div className="bg-purple-50 p-4 rounded-xl text-left">
-                  <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    Dicas e Técnicas
-                  </h3>
-                  <p className="text-sm text-gray-700">Aprenda novas técnicas e descubra os melhores spots.</p>
-                </div>
               </div>
-
-              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold">
-                🚀 Lançamento em breve
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}
@@ -2788,7 +2864,7 @@ function App() {
 
             <div className="bg-white rounded-2xl shadow-md p-4">
               <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-purple-600" />
+                <Info className="w-5 h-5 text-purple-600" />
                 Conheça a Legislação
               </h3>
               <div className="space-y-2">
@@ -2888,54 +2964,6 @@ function App() {
         </div>
       )}
 
-      {/* Sponsors Tab */}
-      {activeTab === 'sponsors' && (
-        <div className="pb-20 max-w-2xl mx-auto p-4">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-6 rounded-b-3xl shadow-lg">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Award className="w-7 h-7" />
-              Patrocinadores & Parceiros
-            </h1>
-            <p className="text-indigo-100 text-sm mt-1">Descontos exclusivos e parcerias</p>
-          </div>
-
-          <div className="space-y-3 mt-4">
-            {sponsors.map((sponsor) => (
-              <div key={sponsor.id} className="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center text-4xl flex-shrink-0">
-                    {sponsor.logo}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-gray-800">{sponsor.name}</h3>
-                      {sponsor.discount && (
-                        <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                          {sponsor.discount}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                        sponsor.type === 'store' ? 'bg-blue-100 text-blue-700' :
-                        sponsor.type === 'factory' ? 'bg-purple-100 text-purple-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {sponsor.type === 'store' ? '🏪 Loja' : sponsor.type === 'factory' ? '🏭 Fábrica' : '🏆 Prêmios'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3">{sponsor.description}</p>
-                    <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
-                      Ver Ofertas
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Subscription Tab */}
       {activeTab === 'subscription' && (
         <div className="pb-20 max-w-2xl mx-auto p-4">
@@ -2948,7 +2976,7 @@ function App() {
           </div>
 
           <div className="space-y-4 mt-4">
-            {subscriptionPlans.map((plan) => (
+            {subscriptionPlans.map((plan: SubscriptionPlan) => (
               <div 
                 key={plan.id} 
                 className={`bg-white rounded-xl p-5 shadow-md relative ${
@@ -2969,7 +2997,7 @@ function App() {
                 </div>
 
                 <div className="space-y-3 mb-5">
-                  {plan.features.map((feature, index) => (
+                  {plan.features.map((feature: string, index: number) => (
                     <div key={index} className="flex items-start gap-2">
                       <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         <span className="text-green-600 text-xs">✓</span>
@@ -3403,16 +3431,6 @@ function App() {
             <span className="text-[9px] font-medium">Liga</span>
           </button>
           <button
-            onClick={() => setActiveTab('sponsors')}
-            className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
-            style={{ 
-              color: activeTab === 'sponsors' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
-            }}
-          >
-            <Users className={`w-5 h-5 ${activeTab === 'sponsors' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[9px] font-medium">Parceiros</span>
-          </button>
-          <button
             onClick={() => setActiveTab('community')}
             className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{ 
@@ -3423,14 +3441,14 @@ function App() {
             <span className="text-[9px] font-medium">Fórum</span>
           </button>
           <button
-            onClick={() => setActiveTab('weather')}
+            onClick={() => setActiveTab('community')}
             className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{
-              color: activeTab === 'weather' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+              color: activeTab === 'community' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
             }}
           >
-            <Cloud className={`w-5 h-5 ${activeTab === 'weather' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[9px] font-medium">Clima</span>
+            <Users className={`w-5 h-5 ${activeTab === 'community' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <span className="text-[9px] font-medium">Amigos</span>
           </button>
         </div>
       </nav>
