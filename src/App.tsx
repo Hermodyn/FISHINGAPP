@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Image, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, BookOpen, Camera, Trophy, Users, MessageSquare, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -123,7 +123,7 @@ interface League {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'championships' | 'sponsors' | 'subscription' | 'community' | 'leagues' | 'stats' | 'weather' | 'friendsGallery'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'sponsors' | 'subscription' | 'community' | 'leagues' | 'stats' | 'weather' | 'friendsGallery'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [showTips, setShowTips] = useState(false)
   const [showAIScanner, setShowAIScanner] = useState(false)
@@ -1135,7 +1135,7 @@ function App() {
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      <Image className="w-6 h-6 text-white drop-shadow-lg" />
+                      <Camera className="w-6 h-6 text-white drop-shadow-lg" />
                     </div>
                   </>
                 )}
@@ -1738,7 +1738,7 @@ function App() {
           <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 rounded-b-3xl shadow-lg">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Trophy className="w-7 h-7" />
-              Ligas de Pesca
+              Liga
             </h1>
             <p className="text-amber-100 text-sm mt-1">Competições e rankings entre pescadores</p>
           </div>
@@ -1922,6 +1922,71 @@ function App() {
                 <p className="text-sm text-gray-600 mt-1">Crie uma liga e convide seus amigos para competir</p>
               </div>
             )}
+
+            <div className="mt-6">
+              <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+                <h2 className="text-lg font-bold text-gray-800">Torneios</h2>
+                <p className="text-sm text-gray-600">Inscreva-se em competições</p>
+              </div>
+
+              <div className="space-y-4">
+                {championships.map((championship) => (
+                  <div key={championship.id} className="bg-white rounded-xl p-5 shadow-md">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-800 mb-1">{championship.name}</h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                          <MapPin className="w-4 h-4" />
+                          <span>{championship.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Calendar className="w-4 h-4" />
+                          <span>{new Date(championship.date).toLocaleDateString('pt-BR', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        championship.status === 'open' ? 'bg-green-100 text-green-700' :
+                        championship.status === 'ongoing' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {championship.status === 'open' ? '🟢 Aberto' : championship.status === 'ongoing' ? '🔵 Em Andamento' : '🔴 Fechado'}
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-3 mb-3">
+                      <div className="flex items-center gap-2 text-amber-800">
+                        <Trophy className="w-5 h-5" />
+                        <span className="font-bold">Prêmio: {championship.prize}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-sm text-gray-600">
+                        <Users className="w-4 h-4 inline mr-1" />
+                        <span className="font-semibold">{championship.participants}/{championship.maxParticipants}</span> participantes
+                      </div>
+                      <div className="w-full max-w-[200px] bg-gray-200 rounded-full h-2 ml-3">
+                        <div
+                          className="bg-green-600 h-2 rounded-full transition-all"
+                          style={{ width: `${(championship.participants / championship.maxParticipants) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {championship.status === 'open' && (
+                      <button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md">
+                        Inscrever-se Agora
+                      </button>
+                    )}
+                    {championship.status === 'ongoing' && (
+                      <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md">
+                        Ver Resultados ao Vivo
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -2223,7 +2288,7 @@ function App() {
       )}
 
       {/* Championships Tab */}
-      {activeTab === 'championships' && (
+      {false && (
         <div className="pb-20 max-w-2xl mx-auto">
           <div className="bg-gradient-to-br from-orange-600 to-red-700 text-white p-4">
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -2725,7 +2790,7 @@ function App() {
       )}
 
       {/* Championships Tab */}
-      {activeTab === 'championships' && (
+      {false && (
         <div className="pb-20 max-w-2xl mx-auto p-4">
           <div className="bg-gradient-to-r from-green-600 to-emerald-700 text-white p-6 rounded-b-3xl shadow-lg">
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -3295,17 +3360,7 @@ function App() {
             }}
           >
             <Trophy className={`w-5 h-5 ${activeTab === 'leagues' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[9px] font-medium">Ligas</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('championships')}
-            className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
-            style={{ 
-              color: activeTab === 'championships' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
-            }}
-          >
-            <Award className={`w-5 h-5 ${activeTab === 'championships' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
-            <span className="text-[9px] font-medium">Torneios</span>
+            <span className="text-[9px] font-medium">Liga</span>
           </button>
           <button
             onClick={() => setActiveTab('sponsors')}
