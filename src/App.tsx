@@ -161,6 +161,7 @@ function App() {
   const [showCreateLeague, setShowCreateLeague] = useState(false)
   const [leagues, setLeagues] = useState<League[]>([])
   const [editingLeagueId, setEditingLeagueId] = useState<number | null>(null)
+  const [rankingScope, setRankingScope] = useState<'city' | 'state' | 'country' | 'world'>('city')
   const [newLeague, setNewLeague] = useState({
     name: '',
     category: '',
@@ -258,6 +259,14 @@ function App() {
     ],
     []
   )
+
+  // Global Ranking Mock Data
+  const globalRanking = useMemo(() => ({
+    city: { position: 12, total: 847, location: 'Florianópolis, SC' },
+    state: { position: 45, total: 3521, location: 'Santa Catarina' },
+    country: { position: 234, total: 18942, location: 'Brasil' },
+    world: { position: 1847, total: 52103, location: 'Mundial' }
+  }), [])
 
   const fetchTidesForLocation = useCallback(async (lat: number, lon: number) => {
     const apiKey = (import.meta as any).env?.VITE_WORLDTIDES_KEY as string | undefined
@@ -1221,19 +1230,6 @@ function App() {
 
           {/* Photo Gallery - Grid Layout */}
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <h3 className="text-sm font-bold text-gray-700"></h3>
-              </div>
-
-              <button
-                onClick={() => setShowAIScanner(true)}
-                className="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1"
-              >
-                <Scan className="w-4 h-4" />
-                AI Scan
-              </button>
-            </div>
             <div className="grid grid-cols-3" style={{ gap: '0.5mm' }}>
               {mineGalleryPhotos.map((photo) => {
                 const weight = typeof photo.weight === 'number' ? photo.weight : undefined
@@ -1925,6 +1921,93 @@ function App() {
           </div>
 
           <div className="p-4">
+            {/* Global Ranking Section */}
+            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+              <h2 className="text-lg font-bold text-gray-800 mb-3">Seu Ranking Global</h2>
+              
+              {/* Scope Filter Buttons */}
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                <button
+                  onClick={() => setRankingScope('city')}
+                  className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
+                    rankingScope === 'city'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Cidade
+                </button>
+                <button
+                  onClick={() => setRankingScope('state')}
+                  className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
+                    rankingScope === 'state'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Estado
+                </button>
+                <button
+                  onClick={() => setRankingScope('country')}
+                  className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
+                    rankingScope === 'country'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  País
+                </button>
+                <button
+                  onClick={() => setRankingScope('world')}
+                  className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
+                    rankingScope === 'world'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Mundo
+                </button>
+              </div>
+
+              {/* Ranking Display */}
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold text-gray-600">
+                    {globalRanking[rankingScope].location}
+                  </div>
+                  <div className="flex items-center gap-1 text-amber-600">
+                    <Trophy className="w-4 h-4" />
+                    <span className="text-xs font-semibold">Ranking</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-3xl font-bold text-amber-600">
+                      #{globalRanking[rankingScope].position}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      de {globalRanking[rankingScope].total.toLocaleString('pt-BR')} pescadores
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-gray-700">
+                      Top {((globalRanking[rankingScope].position / globalRanking[rankingScope].total) * 100).toFixed(1)}%
+                    </div>
+                    <div className="w-24 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-amber-500 to-orange-600 rounded-full"
+                        style={{ 
+                          width: `${Math.min(100, (1 - globalRanking[rankingScope].position / globalRanking[rankingScope].total) * 100)}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -3382,6 +3465,17 @@ function App() {
                   <img src={newCatch.photoUrl} alt="Foto da captura" className="w-full h-48 object-cover" />
                 </div>
               )}
+
+              <button
+                onClick={() => {
+                  setShowAddCatch(false)
+                  setShowAIScanner(true)
+                }}
+                className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all flex items-center justify-center gap-2"
+              >
+                <Scan className="w-5 h-5" />
+                IA Scan - Identificar Peixe
+              </button>
 
               <select
                 value={newCatch.species === '' || fishSpecies.includes(newCatch.species) ? newCatch.species : 'Outro'}
