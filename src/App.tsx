@@ -143,6 +143,7 @@ function App() {
   const [mapSpot, setMapSpot] = useState<FishingSpot | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoGallery | null>(null)
   const [galleryMode, setGalleryMode] = useState<'mine' | 'friends'>('mine')
+  const [selectedFriendId, setSelectedFriendId] = useState<number | null>(null)
   const [photoLikes, setPhotoLikes] = useState<Record<number, boolean>>({})
   const [photoComments, setPhotoComments] = useState<Record<number, string[]>>({})
   const [photoCaptions, setPhotoCaptions] = useState<Record<number, string>>({})
@@ -259,6 +260,41 @@ function App() {
     ],
     []
   )
+
+  // Friends photos distributed among friends
+  const friendsPhotosData = useMemo(() => {
+    const allPhotos = [
+      { url: '/friendscatches/pexels-aksbykas-6755885.jpg', weight: 4.8, date: '2026-02-16' },
+      { url: '/friendscatches/pexels-brett-sayles-1143921.jpg', weight: 2.1, date: '2026-02-15' },
+      { url: '/friendscatches/pexels-cottonbro-4828176.jpg', weight: 3.3, date: '2026-02-14' },
+      { url: '/friendscatches/pexels-gasparzaldo-8671755.jpg', weight: 1.9, date: '2026-02-13' },
+      { url: '/friendscatches/pexels-ionelceban-3010500.jpg', weight: 5.2, date: '2026-02-12' },
+      { url: '/friendscatches/pexels-ionelceban-3796761.jpg', weight: 3.7, date: '2026-02-11' },
+      { url: '/friendscatches/pexels-meruyert-gonullu-6034023.jpg', weight: 2.8, date: '2026-02-10' },
+      { url: '/friendscatches/pexels-michal-dziekonski-2726786-4343735.jpg', weight: 4.1, date: '2026-02-09' },
+      { url: '/friendscatches/pexels-thirdman-5538270.jpg', weight: 3.5, date: '2026-02-08' },
+      { url: '/friendscatches/pexels-tima-miroshnichenko-6830975.jpg', weight: 4.5, date: '2026-02-07' },
+      { url: '/friendscatches/pexels-tima-miroshnichenko-6830985.jpg', weight: 2.9, date: '2026-02-06' },
+      { url: '/friendscatches/pexels-toulouse-3099187.jpg', weight: 3.8, date: '2026-02-05' },
+      { url: '/friendscatches/pexels-vietnamese-private-tours-435436-1162639.jpg', weight: 2.3, date: '2026-02-04' }
+    ]
+
+    // Distribute photos among friends (13 photos / 3 friends = 4-5 photos each)
+    const photosPerFriend = Math.floor(allPhotos.length / friends.length)
+    const friendsData: Record<number, PhotoGallery[]> = {}
+    
+    friends.forEach((friend, index) => {
+      const startIdx = index * photosPerFriend
+      const endIdx = index === friends.length - 1 ? allPhotos.length : startIdx + photosPerFriend
+      friendsData[friend.id] = allPhotos.slice(startIdx, endIdx).map((photo, photoIdx) => ({
+        ...photo,
+        id: 100 + index * 10 + photoIdx,
+        friendName: friend.name
+      })) as PhotoGallery[]
+    })
+
+    return friendsData
+  }, [friends])
 
   // Global Ranking Mock Data
   const globalRanking = useMemo(() => ({
@@ -1573,37 +1609,86 @@ function App() {
             )}
 
             {galleryMode === 'friends' && (
-              <div className="grid grid-cols-3 gap-2">
-                {friendsGalleryPhotos
-                  .slice()
-                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                  .map((photo) => {
-                    const weight = typeof photo.weight === 'number' ? photo.weight : undefined
-                    const rankFriends = friendsTop3PhotoIdsByWeight.indexOf(photo.id)
-
-                    return (
-                      <div
-                        key={photo.id}
-                        onClick={() => setSelectedPhoto(photo)}
-                        className="relative rounded-xl overflow-hidden shadow-md hover:scale-105 transition-transform cursor-pointer aspect-[4/5]"
-                      >
-                        <img src={photo.url} alt="Foto" className="w-full h-full object-cover" />
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
-                          <p className="text-white text-[10px] font-semibold">
-                            {typeof weight === 'number' ? `${weight} kg` : '—'}
-                          </p>
-                        </div>
-
-                        {rankFriends >= 0 && (
-                          <div className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 text-white rounded-full px-2 py-0.5">
-                            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="text-[10px] font-bold">{rankFriends + 1}</span>
+              <>
+                {!selectedFriendId ? (
+                  /* Friends List */
+                  <div className="space-y-3">
+                    {friends.map((friend) => {
+                      const friendPhotos = friendsPhotosData[friend.id] || []
+                      const photoCount = friendPhotos.length
+                      
+                      return (
+                        <div
+                          key={friend.id}
+                          onClick={() => setSelectedFriendId(friend.id)}
+                          className="bg-white rounded-2xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-all active:scale-98"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${friend.gradient} flex items-center justify-center text-white font-bold text-xl shadow-md`}>
+                              {friend.initials}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-lg font-bold text-gray-800">{friend.name}</h3>
+                              <p className="text-sm text-gray-600">{photoCount} {photoCount === 1 ? 'captura' : 'capturas'}</p>
+                            </div>
+                            <ChevronRight className="w-6 h-6 text-gray-400" />
                           </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  /* Selected Friend's Photos */
+                  <>
+                    <button
+                      onClick={() => setSelectedFriendId(null)}
+                      className="flex items-center gap-2 text-blue-600 font-semibold mb-4 hover:text-blue-700 transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                      Voltar para lista de amigos
+                    </button>
+                    
+                    <div className="mb-4">
+                      <div className="flex items-center gap-3">
+                        {friends.find(f => f.id === selectedFriendId) && (
+                          <>
+                            <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${friends.find(f => f.id === selectedFriendId)!.gradient} flex items-center justify-center text-white font-bold shadow-md`}>
+                              {friends.find(f => f.id === selectedFriendId)!.initials}
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-800">
+                              {friends.find(f => f.id === selectedFriendId)!.name}
+                            </h2>
+                          </>
                         )}
                       </div>
-                    )
-                  })}
-              </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      {(friendsPhotosData[selectedFriendId] || [])
+                        .slice()
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                        .map((photo) => {
+                          const weight = typeof photo.weight === 'number' ? photo.weight : undefined
+
+                          return (
+                            <div
+                              key={photo.id}
+                              onClick={() => setSelectedPhoto(photo)}
+                              className="relative rounded-xl overflow-hidden shadow-md hover:scale-105 transition-transform cursor-pointer aspect-[4/5]"
+                            >
+                              <img src={photo.url} alt="Foto" className="w-full h-full object-cover" />
+                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                                <p className="text-white text-[10px] font-semibold">
+                                  {typeof weight === 'number' ? `${weight} kg` : '—'}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </>
+                )}
+              </>
             )}
           </div>
         </div>
