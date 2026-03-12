@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -1217,7 +1217,15 @@ function App() {
           {/* Photo Gallery - Grid Layout */}
           <div className="mb-4">
             <div className="grid grid-cols-3" style={{ gap: '0.5mm' }}>
-              {mineGalleryPhotos.map((photo) => {
+              {mineGalleryPhotos
+                .slice()
+                .sort((a, b) => {
+                  const likesA = photoLikes[a.id] ? 1 : 0
+                  const likesB = photoLikes[b.id] ? 1 : 0
+                  return likesB - likesA
+                })
+                .slice(0, 9)
+                .map((photo) => {
                 const weight = typeof photo.weight === 'number' ? photo.weight : undefined
                 const catchId = 'catchId' in photo ? photo.catchId : undefined
                 const rankMine = typeof catchId === 'number' ? top3CatchIdsByWeight.indexOf(catchId) : -1
@@ -1467,11 +1475,29 @@ function App() {
       {activeTab === 'catches' && (
         <div className="pb-20 max-w-2xl mx-auto">
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 rounded-b-3xl shadow-lg">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Fish className="w-7 h-7" />
-              Minhas Capturas
-            </h1>
-            <p className="text-blue-100 text-sm mt-1">{totalCatches} peixes registrados</p>
+            {/* Toggle between Mine and Friends Gallery */}
+            <div className="flex gap-3 max-w-md mx-auto">
+              <button
+                onClick={() => setGalleryMode('mine')}
+                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                  galleryMode === 'mine'
+                    ? 'bg-white text-blue-800 shadow-md'
+                    : 'bg-blue-700/50 text-white hover:bg-blue-700'
+                }`}
+              >
+                Minhas Capturas
+              </button>
+              <button
+                onClick={() => setGalleryMode('friends')}
+                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                  galleryMode === 'friends'
+                    ? 'bg-white text-blue-800 shadow-md'
+                    : 'bg-blue-700/50 text-white hover:bg-blue-700'
+                }`}
+              >
+                Capturas dos Amigos
+              </button>
+            </div>
           </div>
 
           <input
@@ -1489,13 +1515,16 @@ function App() {
           />
 
           <div className="p-4 space-y-3">
-            <button
-              onClick={() => catchPhotoInputRef.current?.click()}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-3 rounded-2xl font-semibold hover:from-blue-700 hover:to-blue-900 transition-colors flex items-center justify-center gap-2"
-            >
-              <Camera className="w-5 h-5" />
-              Nova captura (tirar foto)
-            </button>
+
+            {galleryMode === 'mine' && (
+              <button
+                onClick={() => catchPhotoInputRef.current?.click()}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-3 rounded-2xl font-semibold hover:from-blue-700 hover:to-blue-900 transition-colors flex items-center justify-center gap-2"
+              >
+                <Camera className="w-5 h-5" />
+                Nova captura (tirar foto)
+              </button>
+            )}
 
             {identifyLoading && (
               <div className="bg-white p-4 rounded-2xl shadow-md">
@@ -1503,47 +1532,79 @@ function App() {
               </div>
             )}
 
-            {catches.map((catch_) => (
-              <div key={catch_.id} className="bg-white p-4 rounded-2xl shadow-md">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-xl font-bold text-gray-800">{catch_.species}</h3>
-                  <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                    {catch_.weight} kg
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
-                  {catch_.length > 0 ? (
-                    <div className="flex items-center gap-2">
-                      <Ruler className="w-4 h-4 text-blue-600" />
-                      <span>{catch_.length} cm</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Ruler className="w-4 h-4 text-blue-600" />
-                      <span>—</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Cloud className="w-4 h-4 text-blue-600" />
-                    <span>{catch_.weather}</span>
+            {galleryMode === 'mine' && (
+              <>
+                {/* Photo Gallery - Complete */}
+                <div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {mineGalleryPhotos
+                      .slice()
+                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                      .map((photo) => {
+                        const weight = typeof photo.weight === 'number' ? photo.weight : undefined
+                        const catchId = 'catchId' in photo ? photo.catchId : undefined
+                        const rankMine = typeof catchId === 'number' ? top3CatchIdsByWeight.indexOf(catchId) : -1
+
+                        return (
+                          <div
+                            key={photo.id}
+                            onClick={() => setSelectedPhoto(photo)}
+                            className="relative rounded-xl overflow-hidden shadow-md hover:scale-105 transition-transform cursor-pointer aspect-[4/5]"
+                          >
+                            <img src={photo.url} alt="Foto" className="w-full h-full object-cover" />
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                              <p className="text-white text-[10px] font-semibold">
+                                {typeof weight === 'number' ? `${weight} kg` : '—'}
+                              </p>
+                            </div>
+
+                            {rankMine >= 0 && (
+                              <div className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 text-white rounded-full px-2 py-0.5">
+                                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                                <span className="text-[10px] font-bold">{rankMine + 1}</span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-500 pt-2 border-t border-gray-100">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    {catch_.location}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(catch_.date).toLocaleDateString('pt-BR')}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {catch_.time}
-                  </span>
-                </div>
+              </>
+            )}
+
+            {galleryMode === 'friends' && (
+              <div className="grid grid-cols-3 gap-2">
+                {friendsGalleryPhotos
+                  .slice()
+                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .map((photo) => {
+                    const weight = typeof photo.weight === 'number' ? photo.weight : undefined
+                    const rankFriends = friendsTop3PhotoIdsByWeight.indexOf(photo.id)
+
+                    return (
+                      <div
+                        key={photo.id}
+                        onClick={() => setSelectedPhoto(photo)}
+                        className="relative rounded-xl overflow-hidden shadow-md hover:scale-105 transition-transform cursor-pointer aspect-[4/5]"
+                      >
+                        <img src={photo.url} alt="Foto" className="w-full h-full object-cover" />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                          <p className="text-white text-[10px] font-semibold">
+                            {typeof weight === 'number' ? `${weight} kg` : '—'}
+                          </p>
+                        </div>
+
+                        {rankFriends >= 0 && (
+                          <div className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 text-white rounded-full px-2 py-0.5">
+                            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-[10px] font-bold">{rankFriends + 1}</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
