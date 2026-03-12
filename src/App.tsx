@@ -2508,7 +2508,7 @@ function App() {
 
           <div className="p-4 space-y-3">
             {communityPosts.map((post) => (
-              <div key={post.id} className="bg-white rounded-2xl shadow-md p-4">
+              <div key={post.id} className="bg-blue-50/95 backdrop-blur-sm rounded-2xl shadow-md p-4 border border-blue-100">
                 <div className="flex items-start gap-3">
                   <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 border border-purple-200 flex items-center justify-center font-bold text-purple-800 flex-shrink-0">
                     {(post.name.split(' ')[0]?.[0] || 'P') + (post.name.split(' ')[1]?.[0] || '')}
@@ -3298,7 +3298,7 @@ function App() {
                   <div className="mt-3">
                     <div className="space-y-2 max-h-40 overflow-y-auto">
                       {(photoComments[selectedPhoto.id] || []).map((c, idx) => (
-                        <div key={idx} className="text-sm text-white/90 bg-white/10 border border-white/10 rounded-xl px-3 py-2">
+                        <div key={idx} className="text-sm text-gray-800 bg-blue-50 rounded-xl px-3 py-2">
                           {c}
                         </div>
                       ))}
@@ -3313,11 +3313,11 @@ function App() {
                         placeholder="Adicionar um comentário..."
                         value={newPhotoComment}
                         onChange={(e) => setNewPhotoComment(e.target.value)}
-                        className="flex-1 p-3 rounded-xl bg-white/10 border border-white/15 text-white placeholder:text-white/50 outline-none"
+                        className="flex-1 p-3 rounded-xl bg-blue-50 border border-blue-100 text-gray-800 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-blue-300"
                       />
                       <button
                         onClick={() => handleAddPhotoComment(selectedPhoto.id)}
-                        className="px-4 rounded-xl bg-white text-gray-900 font-semibold hover:bg-gray-100 transition-colors"
+                        className="px-4 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
                       >
                         Enviar
                       </button>
