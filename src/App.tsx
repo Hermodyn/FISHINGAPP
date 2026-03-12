@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Fish, MapPin, Cloud, Sun, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Clock, Ruler, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -1098,6 +1098,16 @@ function App() {
                     <h3 className="font-bold text-sm">📚 Fishing Tips</h3>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
+                    <button
+                      onClick={() => {
+                        setShowTips(false)
+                        setActiveTab('weather')
+                      }}
+                      className="w-full text-left p-3 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                    >
+                      <div className="font-semibold text-gray-800 text-sm">☀️ Clima e Condições</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Previsão do tempo e marés</div>
+                    </button>
                     <a
                       href="https://www.youtube.com/results?search_query=nós+de+pesca+tutorial"
                       target="_blank"
@@ -1202,30 +1212,6 @@ function App() {
               <Trophy className="w-10 h-10 text-amber-500" strokeWidth={2} />
               <span className="text-xs font-bold text-gray-800">Ligas</span>
             </button>
-          </div>
-
-          {/* Friends Gallery Icons - Small Icons Row */}
-          <div className="mb-4">
-            <div className="flex gap-3 justify-center">
-              <button 
-                onClick={() => setActiveTab('weather')}
-                className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
-              >
-                <Sun className="w-7 h-7 text-blue-600" />
-              </button>
-              <button 
-                onClick={() => setActiveTab('spots')}
-                className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
-              >
-                <MapPin className="w-7 h-7 text-blue-600" />
-              </button>
-              <button 
-                onClick={() => setActiveTab('friendsGallery')}
-                className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center border-2 border-gray-100 hover:scale-105 transition-all"
-              >
-                <Users className="w-7 h-7 text-blue-600" />
-              </button>
-            </div>
           </div>
 
           {/* Photo Gallery - Grid Layout */}
