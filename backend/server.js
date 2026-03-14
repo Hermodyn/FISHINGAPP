@@ -35,6 +35,30 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Debug endpoint - visualizar todo o banco de dados
+app.get('/debug/database', async (req, res) => {
+  const db = require('./database/db');
+  const catches = await db.catches.findAll();
+  const spots = await db.spots.findAll();
+  const weather = await db.weather.getCurrent();
+  
+  res.json({
+    database: 'in-memory',
+    timestamp: new Date().toISOString(),
+    data: {
+      catches: {
+        count: catches.length,
+        items: catches
+      },
+      spots: {
+        count: spots.length,
+        items: spots
+      },
+      weather: weather
+    }
+  });
+});
+
 const server = app.listen(PORT, () => {
   console.log(`🎣 Backend server running on port ${PORT}`);
   console.log(`📚 API Docs available at http://localhost:${PORT}/api-docs`);
