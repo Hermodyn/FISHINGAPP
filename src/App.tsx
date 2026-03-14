@@ -686,7 +686,6 @@ function App() {
   })
 
   const catchPhotoInputRef = useRef<HTMLInputElement | null>(null)
-  const catchesAutoOpenedRef = useRef(false)
   const [showFishIdentified, setShowFishIdentified] = useState(false)
   const [identifiedSpecies, setIdentifiedSpecies] = useState('')
   const [identifyLoading, setIdentifyLoading] = useState(false)
@@ -816,19 +815,7 @@ function App() {
     }
   }, [catches, newCatch, registerLoading])
 
-  useEffect(() => {
-    if (activeTab === 'catches') {
-      if (!catchesAutoOpenedRef.current) {
-        catchesAutoOpenedRef.current = true
-        setTimeout(() => {
-          catchPhotoInputRef.current?.click()
-        }, 250)
-      }
-      return
-    }
-
-    catchesAutoOpenedRef.current = false
-  }, [activeTab])
+  // Removed auto-open camera functionality for catches tab
 
   // Close registration modal when tab changes
   useEffect(() => {
@@ -1551,16 +1538,6 @@ function App() {
           />
 
           <div className="p-4 space-y-3">
-
-            {galleryMode === 'mine' && (
-              <button
-                onClick={() => catchPhotoInputRef.current?.click()}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-3 rounded-2xl font-semibold hover:from-blue-700 hover:to-blue-900 transition-colors flex items-center justify-center gap-2"
-              >
-                <Camera className="w-5 h-5" />
-                Nova captura (tirar foto)
-              </button>
-            )}
 
             {identifyLoading && (
               <div className="bg-white p-4 rounded-2xl shadow-md">
