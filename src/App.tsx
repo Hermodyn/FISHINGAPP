@@ -1083,7 +1083,8 @@ function App() {
         className="fixed inset-0 z-0 bg-cover bg-center ocean-wave pointer-events-none"
         style={{ 
           backgroundImage: "url('/Fundo.jpg')",
-          opacity: 0.3
+          opacity: 0.15,
+          filter: 'grayscale(100%)'
         }}
       />
       
@@ -3686,11 +3687,10 @@ function App() {
       )}
 
       <nav 
-        className="fixed bottom-0 left-0 right-0 z-50 border-t"
+        className="fixed bottom-0 left-0 right-0 z-50 border-t border-blue-900/30"
         style={{
-          background: "hsl(210 25% 12% / 0.9)",
-          backdropFilter: "blur(20px)",
-          borderColor: "hsl(210 20% 20%)"
+          background: "rgb(30, 58, 138)",
+          backdropFilter: "blur(20px)"
         }}
       >
         <div className="flex items-center justify-around px-1 py-2 max-w-lg mx-auto">
@@ -3698,40 +3698,40 @@ function App() {
             onClick={() => setActiveTab('home')}
             className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{ 
-              color: activeTab === 'home' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+              color: activeTab === 'home' ? 'white' : 'rgba(255, 255, 255, 0.6)'
             }}
           >
-            <Anchor className={`w-5 h-5 ${activeTab === 'home' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <Anchor className={`w-5 h-5 ${activeTab === 'home' ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`} />
             <span className="text-[9px] font-medium">Início</span>
           </button>
           <button
             onClick={() => setActiveTab('leagues')}
             className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{ 
-              color: activeTab === 'leagues' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+              color: activeTab === 'leagues' ? 'white' : 'rgba(255, 255, 255, 0.6)'
             }}
           >
-            <Trophy className={`w-5 h-5 ${activeTab === 'leagues' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <Trophy className={`w-5 h-5 ${activeTab === 'leagues' ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`} />
             <span className="text-[9px] font-medium">Liga</span>
           </button>
           <button
             onClick={() => setActiveTab('spots')}
             className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{ 
-              color: activeTab === 'spots' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+              color: activeTab === 'spots' ? 'white' : 'rgba(255, 255, 255, 0.6)'
             }}
           >
-            <MapPin className={`w-5 h-5 ${activeTab === 'spots' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <MapPin className={`w-5 h-5 ${activeTab === 'spots' ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`} />
             <span className="text-[9px] font-medium">Lugares</span>
           </button>
           <button
             onClick={() => setActiveTab('community')}
             className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition-colors"
             style={{
-              color: activeTab === 'community' ? 'hsl(195 80% 45%)' : 'hsl(210 15% 55%)'
+              color: activeTab === 'community' ? 'white' : 'rgba(255, 255, 255, 0.6)'
             }}
           >
-            <Users className={`w-5 h-5 ${activeTab === 'community' ? 'drop-shadow-[0_0_6px_hsl(195_80%_45%/0.5)]' : ''}`} />
+            <Users className={`w-5 h-5 ${activeTab === 'community' ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`} />
             <span className="text-[9px] font-medium">Amigos</span>
           </button>
         </div>
