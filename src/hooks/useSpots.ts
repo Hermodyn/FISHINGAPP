@@ -1,15 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
-
-export interface FishingSpot {
-  id: number;
-  name: string;
-  catches_count?: number;
-  rating: number;
-  latitude?: number;
-  longitude?: number;
-  distance?: number;
-}
+import type { FishingSpot } from '../services/api';
 
 export function useSpots() {
   const [spots, setSpots] = useState<FishingSpot[]>([]);

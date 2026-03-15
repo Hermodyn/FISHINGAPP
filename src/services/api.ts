@@ -15,7 +15,7 @@ interface Catch {
 interface FishingSpot {
   id: number;
   name: string;
-  catches: number;
+  catches_count?: number;
   rating: number;
 }
 

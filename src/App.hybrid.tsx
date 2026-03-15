@@ -20,7 +20,7 @@ function App() {
   const [showTips, setShowTips] = useState(false);
 
   // ==================== DATA HOOKS ====================
-  const { catches, loading: catchesLoading, error: catchesError, addCatch, refetch: refetchCatches } = useCatches();
+  const { catches, loading: catchesLoading, error: catchesError, refetch: refetchCatches } = useCatches();
   const { spots, loading: spotsLoading, error: spotsError } = useSpots();
   const { weather, loading: weatherLoading, error: weatherError } = useWeather();
   const { tideData, loading: tidesLoading, error: tidesError, fetchTidesForCurrentLocation } = useTides();
