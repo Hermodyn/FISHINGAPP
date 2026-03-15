@@ -48,59 +48,40 @@ class ApiService {
     return response.json();
   }
 
-  // Catches API
-  async getCatches(): Promise<Catch[]> {
-    return this.request<Catch[]>('/catches');
-  }
+  catches = {
+    getAll: (): Promise<Catch[]> => this.request<Catch[]>('/catches'),
+    getById: (id: number): Promise<Catch> => this.request<Catch>(`/catches/${id}`),
+    create: (data: Omit<Catch, 'id' | 'date' | 'time'>): Promise<Catch> => 
+      this.request<Catch>('/catches', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: number, data: Partial<Catch>): Promise<Catch> => 
+      this.request<Catch>(`/catches/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: number): Promise<void> => 
+      this.request<void>(`/catches/${id}`, {
+        method: 'DELETE',
+      }),
+  };
 
-  async getCatch(id: number): Promise<Catch> {
-    return this.request<Catch>(`/catches/${id}`);
-  }
+  spots = {
+    getAll: (): Promise<FishingSpot[]> => this.request<FishingSpot[]>('/spots'),
+    getById: (id: number): Promise<FishingSpot> => this.request<FishingSpot>(`/spots/${id}`),
+    create: (data: Omit<FishingSpot, 'id'>): Promise<FishingSpot> => 
+      this.request<FishingSpot>('/spots', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  };
 
-  async createCatch(data: Omit<Catch, 'id'>): Promise<Catch> {
-    return this.request<Catch>('/catches', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateCatch(id: number, data: Partial<Catch>): Promise<Catch> {
-    return this.request<Catch>(`/catches/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteCatch(id: number): Promise<void> {
-    return this.request<void>(`/catches/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Spots API
-  async getSpots(): Promise<FishingSpot[]> {
-    return this.request<FishingSpot[]>('/spots');
-  }
-
-  async getSpot(id: number): Promise<FishingSpot> {
-    return this.request<FishingSpot>(`/spots/${id}`);
-  }
-
-  async createSpot(data: Omit<FishingSpot, 'id'>): Promise<FishingSpot> {
-    return this.request<FishingSpot>('/spots', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // Weather API
-  async getCurrentWeather(): Promise<Weather> {
-    return this.request<Weather>('/weather/current');
-  }
-
-  async getWeatherForecast(): Promise<{ today: Weather; tomorrow: Weather; dayAfter: Weather }> {
-    return this.request('/weather/forecast');
-  }
+  weather = {
+    getCurrent: (): Promise<Weather> => this.request<Weather>('/weather/current'),
+    getForecast: (): Promise<{ today: Weather; tomorrow: Weather; dayAfter: Weather }> => 
+      this.request('/weather/forecast'),
+  };
 }
 
 export const api = new ApiService();
