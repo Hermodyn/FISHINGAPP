@@ -681,7 +681,7 @@ function App() {
       name: 'Rafa Pescador',
       handle: '@rafapesca',
       time: '2h',
-      text: 'Dica rápida: na maré vazante, tenta trabalhar a isca mais lento e perto das estruturas. Aqui funcionou bem com camarão artificial. 🎣',
+      text: 'Fala, pessoal! Eu marquei minha pesca preferida como Esportiva, mas também preenchi as modalidades que eu faço de vez em quando (Marítima, Rio e Pesque e Pague).\n\nDepois que eu deixei “Esportiva + Rio” no meu perfil, comecei a receber torneios e ligas bem mais alinhados com o que eu curto.',
       replies: 12,
       likes: 84,
       reposts: 9
@@ -691,7 +691,7 @@ function App() {
       name: 'Marina Costa',
       handle: '@marinacosta',
       time: '4h',
-      text: 'Qual o melhor nó pra leader fluorocarbon com multifilamento? Estou usando FG, mas às vezes escorrega se eu não aperto bem.',
+      text: 'Oi! Eu atualizei meu perfil com os equipamentos que eu mais uso (vara 17lb, multifilamento 30lb, leader 0.40, carretilha perfil baixo).\n\nQuando eu marquei “multifilamento + leader fluorocarbon”, comecei a ver ligas com regras de leader mínimo e recomendações que fazem mais sentido pra mim.',
       replies: 39,
       likes: 102,
       reposts: 7
@@ -701,8 +701,8 @@ function App() {
       name: 'Dicas do Mar',
       handle: '@dicasdomar',
       time: '6h',
-      text: 'Mapa de vento/ondas (bem útil antes de sair). Vale conferir antes de escolher o ponto.',
-      link: 'https://www.windy.com/',
+      text: 'E aí! Eu coloquei no meu perfil que minha praia é pesca Marítima (costeira/embarcada) e deixei Rio como segunda opção.\n\nDepois que eu marquei “Marítima”, comecei a receber convites de ligas com regras de embarcação e até lembretes mais úteis por causa da maré.',
+      link: undefined,
       replies: 8,
       likes: 56,
       reposts: 11
@@ -712,7 +712,7 @@ function App() {
       name: 'João do Tucunaré',
       handle: '@joaotucunare',
       time: '1d',
-      text: 'Opinião: mais importante que o equipamento é constância. Mesma isca, mesmo ponto, mudando só o ângulo e velocidade. Uma hora o peixe reage.',
+      text: 'Salve! Eu comecei a acompanhar direitinho as ligas que eu tô participando e ativei lembretes de prazo (início/fim) pra não vacilar.\n\nEu entrei em 2 ligas (Peso e Quantidade) e, com os lembretes ativos, parei de esquecer de registrar a captura dentro do período.',
       replies: 21,
       likes: 190,
       reposts: 25
