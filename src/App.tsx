@@ -166,12 +166,15 @@ function App() {
   const [rankingScope, setRankingScope] = useState<'city' | 'state' | 'country' | 'world'>('city')
   const [showRanking, setShowRanking] = useState(false)
   const [showCreateTournament, setShowCreateTournament] = useState(false)
+  const [showTournamentCompetitors, setShowTournamentCompetitors] = useState(false)
   const [newTournament, setNewTournament] = useState({
     name: '',
+    category: '',
     location: '',
-    date: '',
-    prize: '',
-    maxParticipants: '30'
+    invitedFriendIds: [] as number[],
+    prizeEnabled: false,
+    entryFee: '',
+    rules: ''
   })
   const [newLeague, setNewLeague] = useState({
     name: '',
@@ -609,25 +612,26 @@ function App() {
   const handleCreateTournament = useCallback(() => {
     const name = newTournament.name.trim()
     const location = newTournament.location.trim()
-    const date = newTournament.date.trim()
-    const prize = newTournament.prize.trim()
-    const maxParticipantsNumber = Number(newTournament.maxParticipants)
+    const category = newTournament.category.trim()
+    const entryFeeNumber = typeof newTournament.entryFee === 'string' && newTournament.entryFee.trim().length > 0 ? Number(newTournament.entryFee) : 0
+    const entryFee = Number.isFinite(entryFeeNumber) ? entryFeeNumber : 0
 
-    if (!name || !location || !date) {
-      alert('Preencha Nome, Local e Data.')
+    if (!name || !category || !location) {
+      alert('Preencha Nome, Tipo de competição e Local.')
       return
     }
 
-    const maxParticipants = Number.isFinite(maxParticipantsNumber) && maxParticipantsNumber > 0 ? maxParticipantsNumber : 30
     const now = Date.now()
     const distanceKm = Math.max(1, Math.round(Math.random() * 40))
+    const today = new Date().toISOString().split('T')[0]
+    const maxParticipants = Math.max(1, 1 + (newTournament.invitedFriendIds?.length || 0))
 
     const created: Championship = {
       id: now,
       name,
       location,
-      date,
-      prize: prize || '—',
+      date: today,
+      prize: newTournament.prizeEnabled ? `R$ ${entryFee.toFixed(2)}` : '—',
       participants: 0,
       maxParticipants,
       status: 'open',
@@ -636,7 +640,8 @@ function App() {
 
     setChampionships((prev) => [created, ...prev])
     setShowCreateTournament(false)
-    setNewTournament({ name: '', location: '', date: '', prize: '', maxParticipants: '30' })
+    setShowTournamentCompetitors(false)
+    setNewTournament({ name: '', category: '', location: '', invitedFriendIds: [], prizeEnabled: false, entryFee: '', rules: '' })
   }, [newTournament])
 
   // Sponsors Data
@@ -913,6 +918,18 @@ function App() {
 
   const handleToggleInviteFriend = useCallback((friendId: number) => {
     setNewLeague((prev) => {
+      const exists = prev.invitedFriendIds.includes(friendId)
+      return {
+        ...prev,
+        invitedFriendIds: exists
+          ? prev.invitedFriendIds.filter((id) => id !== friendId)
+          : [...prev.invitedFriendIds, friendId]
+      }
+    })
+  }, [])
+
+  const handleToggleTournamentFriend = useCallback((friendId: number) => {
+    setNewTournament((prev) => {
       const exists = prev.invitedFriendIds.includes(friendId)
       return {
         ...prev,
@@ -2049,11 +2066,22 @@ function App() {
             <div className="space-y-3">
               <input
                 type="text"
-                placeholder="Nome do Torneio"
+                placeholder="Nome da Liga"
                 value={newTournament.name}
                 onChange={(e) => setNewTournament((p) => ({ ...p, name: e.target.value }))}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
               />
+
+              <select
+                value={newTournament.category}
+                onChange={(e) => setNewTournament((p) => ({ ...p, category: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-xl bg-white text-base font-semibold text-gray-800 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+              >
+                <option value="">Tipo de competição</option>
+                <option value="Peso">Por peso</option>
+                <option value="Quantidade">Por quantidade</option>
+              </select>
+
               <input
                 type="text"
                 placeholder="Local (ex: Represa, Praia, Pesqueiro)"
@@ -2061,26 +2089,69 @@ function App() {
                 onChange={(e) => setNewTournament((p) => ({ ...p, location: e.target.value }))}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
               />
-              <input
-                type="date"
-                value={newTournament.date}
-                onChange={(e) => setNewTournament((p) => ({ ...p, date: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Prêmio (opcional)"
-                value={newTournament.prize}
-                onChange={(e) => setNewTournament((p) => ({ ...p, prize: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-              />
-              <input
-                type="number"
-                min={1}
-                placeholder="Máximo de participantes"
-                value={newTournament.maxParticipants}
-                onChange={(e) => setNewTournament((p) => ({ ...p, maxParticipants: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+                <button
+                  onClick={() => setShowTournamentCompetitors((v) => !v)}
+                  className="w-full flex items-center justify-between text-left"
+                >
+                  <div className="text-sm font-bold text-orange-900">Adicionar competidores</div>
+                  <ChevronRight className={`w-5 h-5 text-orange-900 transition-transform ${showTournamentCompetitors ? 'rotate-90' : ''}`} />
+                </button>
+                {showTournamentCompetitors && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {friends.map((f) => {
+                      const selected = newTournament.invitedFriendIds.includes(f.id)
+                      return (
+                        <button
+                          key={f.id}
+                          onClick={() => handleToggleTournamentFriend(f.id)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-colors ${
+                            selected
+                              ? 'bg-orange-500 text-white border-orange-500'
+                              : 'bg-white text-orange-900 border-orange-200 hover:bg-orange-100'
+                          }`}
+                        >
+                          <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${f.gradient} text-white flex items-center justify-center text-xs font-bold`}>
+                            {f.initials}
+                          </div>
+                          <span className="text-sm font-semibold">{f.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-xl p-3">
+                <div className="text-sm font-bold text-gray-800 mb-2">Premiação (opcional)</div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(newTournament.prizeEnabled)}
+                      onChange={(e) => setNewTournament((p) => ({ ...p, prizeEnabled: e.target.checked }))}
+                      className="w-4 h-4"
+                    />
+                    Ativar premiação
+                  </label>
+                  {newTournament.prizeEnabled && (
+                    <input
+                      inputMode="decimal"
+                      placeholder="Valor (R$)"
+                      value={newTournament.entryFee}
+                      onChange={(e) => setNewTournament((p) => ({ ...p, entryFee: e.target.value }))}
+                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <textarea
+                placeholder="Regras (opcional)"
+                value={newTournament.rules}
+                onChange={(e) => setNewTournament((p) => ({ ...p, rules: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none min-h-[90px]"
               />
 
               <button
