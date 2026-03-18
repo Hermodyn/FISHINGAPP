@@ -315,25 +315,14 @@ function App() {
   }), [])
 
   const fetchTidesForLocation = useCallback(async (lat: number, lon: number) => {
-    const apiKey = (import.meta as any).env?.VITE_WORLDTIDES_KEY as string | undefined
-    if (!apiKey) {
-      setTideError('Chave de API não configurada. Defina VITE_WORLDTIDES_KEY no .env e reinicie o servidor.')
-      return
-    }
-
     setTideLoading(true)
     setTideError(null)
 
     try {
-      const url = new URL('https://www.worldtides.info/api/v3')
-      url.searchParams.set('heights', '')
-      url.searchParams.set('extremes', '')
-      url.searchParams.set('date', 'today')
-      url.searchParams.set('days', '1')
-      url.searchParams.set('localtime', '1')
+      const apiBaseUrl = ((import.meta as any).env?.VITE_API_URL as string | undefined) || 'http://localhost:3001/api'
+      const url = new URL(`${apiBaseUrl}/tides/current`)
       url.searchParams.set('lat', String(lat))
       url.searchParams.set('lon', String(lon))
-      url.searchParams.set('key', apiKey)
 
       const res = await fetch(url.toString())
       const data = (await res.json()) as TideApiResponse

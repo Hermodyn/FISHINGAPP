@@ -162,37 +162,20 @@ paths:
         - Catches
       summary: List catches
       operationId: listCatches
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: query
-          name: limit
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - in: query
-          name: cursor
-          schema:
-            type: string
-          description: Cursor pagination token
       responses:
         '200':
           description: A list of catches
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedCatches'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Catch'
     post:
       tags:
         - Catches
       summary: Create a catch
       operationId: createCatch
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -208,8 +191,6 @@ paths:
                 $ref: '#/components/schemas/Catch'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
   /api/catches/{catchId}:
     parameters:
@@ -217,15 +198,13 @@ paths:
         name: catchId
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          minimum: 1
     get:
       tags:
         - Catches
       summary: Get a catch
       operationId: getCatch
-      security:
-        - bearerAuth: []
       responses:
         '200':
           description: Catch
@@ -233,8 +212,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Catch'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     put:
@@ -242,8 +219,6 @@ paths:
         - Catches
       summary: Update a catch
       operationId: updateCatch
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -259,8 +234,6 @@ paths:
                 $ref: '#/components/schemas/Catch'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -268,13 +241,9 @@ paths:
         - Catches
       summary: Delete a catch
       operationId: deleteCatch
-      security:
-        - bearerAuth: []
       responses:
         '204':
           description: Deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -284,8 +253,6 @@ paths:
         - Spots
       summary: List fishing spots
       operationId: listSpots
-      security:
-        - bearerAuth: []
       responses:
         '200':
           description: A list of spots
@@ -295,15 +262,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Spot'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
     post:
       tags:
         - Spots
       summary: Create a fishing spot
       operationId: createSpot
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -319,8 +282,6 @@ paths:
                 $ref: '#/components/schemas/Spot'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
   /api/spots/{spotId}:
     parameters:
@@ -328,15 +289,13 @@ paths:
         name: spotId
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          minimum: 1
     get:
       tags:
         - Spots
       summary: Get a fishing spot
       operationId: getSpot
-      security:
-        - bearerAuth: []
       responses:
         '200':
           description: Spot
@@ -344,8 +303,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Spot'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     put:
@@ -353,8 +310,6 @@ paths:
         - Spots
       summary: Update a fishing spot
       operationId: updateSpot
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -370,8 +325,6 @@ paths:
                 $ref: '#/components/schemas/Spot'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -379,13 +332,9 @@ paths:
         - Spots
       summary: Delete a fishing spot
       operationId: deleteSpot
-      security:
-        - bearerAuth: []
       responses:
         '204':
           description: Deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -880,52 +829,40 @@ components:
       type: object
       required:
         - id
-        - userId
         - species
         - date
-        - createdAt
       properties:
         id:
-          $ref: '#/components/schemas/UUID'
-        userId:
-          $ref: '#/components/schemas/UUID'
+          type: integer
+          minimum: 1
         species:
           type: string
           example: Robalo
-        weightKg:
+        weight:
           type: number
           format: float
           nullable: true
           example: 2.4
-        lengthCm:
+        length:
           type: number
           format: float
           nullable: true
           example: 55
-        locationText:
+        location:
           type: string
           nullable: true
           example: Praia do Forte
-        spotId:
-          $ref: '#/components/schemas/UUID'
-          nullable: true
-        caughtAt:
-          $ref: '#/components/schemas/ISODateTime'
-          nullable: true
-        weatherText:
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          example: '06:15'
+        weather:
           type: string
           nullable: true
-        notes:
+        baitUsed:
           type: string
-          nullable: true
-        photos:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatchPhoto'
-        createdAt:
-          $ref: '#/components/schemas/ISODateTime'
-        updatedAt:
-          $ref: '#/components/schemas/ISODateTime'
           nullable: true
 
     CatchCreate:
@@ -935,66 +872,46 @@ components:
       properties:
         species:
           type: string
-        weightKg:
+        weight:
           type: number
           format: float
           nullable: true
-        lengthCm:
+        length:
           type: number
           format: float
           nullable: true
-        locationText:
+        location:
           type: string
           nullable: true
-        spotId:
-          $ref: '#/components/schemas/UUID'
-          nullable: true
-        caughtAt:
-          $ref: '#/components/schemas/ISODateTime'
-          nullable: true
-        weatherText:
+        weather:
           type: string
           nullable: true
-        notes:
+        baitUsed:
           type: string
           nullable: true
-        photoIds:
-          type: array
-          items:
-            $ref: '#/components/schemas/UUID'
 
     CatchUpdate:
       type: object
       properties:
         species:
           type: string
-        weightKg:
+        weight:
           type: number
           format: float
           nullable: true
-        lengthCm:
+        length:
           type: number
           format: float
           nullable: true
-        locationText:
+        location:
           type: string
           nullable: true
-        spotId:
-          $ref: '#/components/schemas/UUID'
-          nullable: true
-        caughtAt:
-          $ref: '#/components/schemas/ISODateTime'
-          nullable: true
-        weatherText:
+        weather:
           type: string
           nullable: true
-        notes:
+        baitUsed:
           type: string
           nullable: true
-        photoIds:
-          type: array
-          items:
-            $ref: '#/components/schemas/UUID'
 
     CatchPhoto:
       type: object
@@ -1028,24 +945,27 @@ components:
       required:
         - id
         - name
-        - createdAt
       properties:
         id:
-          $ref: '#/components/schemas/UUID'
+          type: integer
+          minimum: 1
         name:
           type: string
-        lat:
+        latitude:
           type: number
           format: double
           nullable: true
-        lon:
+        longitude:
           type: number
           format: double
           nullable: true
-        createdAt:
-          $ref: '#/components/schemas/ISODateTime'
-        updatedAt:
-          $ref: '#/components/schemas/ISODateTime'
+        catches_count:
+          type: integer
+          minimum: 0
+          nullable: true
+        rating:
+          type: number
+          format: float
           nullable: true
 
     SpotCreate:
@@ -1055,13 +975,21 @@ components:
       properties:
         name:
           type: string
-        lat:
+        latitude:
           type: number
           format: double
           nullable: true
-        lon:
+        longitude:
           type: number
           format: double
+          nullable: true
+        catches_count:
+          type: integer
+          minimum: 0
+          nullable: true
+        rating:
+          type: number
+          format: float
           nullable: true
 
     SpotUpdate:
@@ -1069,13 +997,21 @@ components:
       properties:
         name:
           type: string
-        lat:
+        latitude:
           type: number
           format: double
           nullable: true
-        lon:
+        longitude:
           type: number
           format: double
+          nullable: true
+        catches_count:
+          type: integer
+          minimum: 0
+          nullable: true
+        rating:
+          type: number
+          format: float
           nullable: true
 
     WeatherCurrent:
@@ -1124,20 +1060,7 @@ components:
 
     TidesCurrent:
       type: object
-      properties:
-        station:
-          type: string
-          nullable: true
-        currentHeightM:
-          type: number
-          format: float
-          nullable: true
-        nextHighAt:
-          $ref: '#/components/schemas/ISODateTime'
-          nullable: true
-        nextLowAt:
-          $ref: '#/components/schemas/ISODateTime'
-          nullable: true
+      additionalProperties: true
 
     PresignRequest:
       type: object

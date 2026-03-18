@@ -31,6 +31,18 @@ interface Weather {
   sunrise?: string;
 }
 
+class ApiError extends Error {
+  status: number;
+  body: unknown;
+
+  constructor(message: string, status: number, body: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
 class ApiService {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -41,11 +53,32 @@ class ApiService {
       ...options,
     });
 
+    const contentType = response.headers.get('content-type') || '';
+    const hasJson = contentType.includes('application/json');
+    const rawText = response.status === 204 ? '' : await response.text();
+
+    const parsedBody: unknown = (() => {
+      if (!rawText) return null;
+      if (!hasJson) return rawText;
+      try {
+        return JSON.parse(rawText);
+      } catch {
+        return rawText;
+      }
+    })();
+
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      const message =
+        typeof (parsedBody as any)?.error === 'string'
+          ? (parsedBody as any).error
+          : typeof (parsedBody as any)?.message === 'string'
+            ? (parsedBody as any).message
+            : response.statusText || 'Request failed';
+
+      throw new ApiError(message, response.status, parsedBody);
     }
 
-    return response.json();
+    return parsedBody as T;
   }
 
   catches = {

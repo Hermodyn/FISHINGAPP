@@ -7,16 +7,30 @@ const path = require('path');
 const catchesRouter = require('./routes/catches');
 const spotsRouter = require('./routes/spots');
 const weatherRouter = require('./routes/weather');
+const tidesRouter = require('./routes/tides');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Load OpenAPI spec
 const openApiPath = path.join(__dirname, '../docs/openapi.yaml');
 const openApiSpec = YAML.load(fs.readFileSync(openApiPath, 'utf8'));
 
 // Middleware
-app.use(cors());
+const corsOriginEnv = process.env.CORS_ORIGIN;
+const corsOrigins = corsOriginEnv
+  ? corsOriginEnv.split(',').map((s) => s.trim()).filter(Boolean)
+  : null;
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!corsOrigins) return callback(null, true);
+    if (!origin) return callback(null, true);
+    if (corsOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  }
+}));
 app.use(express.json());
 
 // Swagger UI
@@ -29,6 +43,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, {
 app.use('/api/catches', catchesRouter);
 app.use('/api/spots', spotsRouter);
 app.use('/api/weather', weatherRouter);
+app.use('/api/tides', tidesRouter);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -37,6 +52,14 @@ app.get('/health', (req, res) => {
 
 // Debug endpoint - visualizar todo o banco de dados
 app.get('/debug/database', async (req, res) => {
+  if (NODE_ENV === 'production') {
+    const token = process.env.DEBUG_TOKEN;
+    const provided = req.get('x-debug-token');
+    if (!token || provided !== token) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+  }
+
   const db = require('./database/db');
   const catches = await db.catches.findAll();
   const spots = await db.spots.findAll();

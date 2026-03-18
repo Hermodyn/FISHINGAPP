@@ -49,8 +49,10 @@ const db = {
       const fields = [];
       const values = [];
       let paramCount = 1;
+      const allowed = new Set(['species', 'weight', 'length', 'location', 'weather', 'baitUsed']);
       
       Object.keys(data).forEach(key => {
+        if (!allowed.has(key)) return;
         if (data[key] !== undefined) {
           fields.push(`${key} = $${paramCount}`);
           values.push(data[key]);
@@ -100,8 +102,10 @@ const db = {
       const fields = [];
       const values = [];
       let paramCount = 1;
+      const allowed = new Set(['name', 'latitude', 'longitude', 'catches_count', 'rating']);
       
       Object.keys(data).forEach(key => {
+        if (!allowed.has(key)) return;
         if (data[key] !== undefined) {
           fields.push(`${key} = $${paramCount}`);
           values.push(data[key]);
@@ -162,7 +166,7 @@ const db = {
     },
     
     getForecast: async () => {
-      const current = await this.getCurrent();
+      const current = await db.weather.getCurrent();
       return {
         today: current,
         tomorrow: { ...current, temp: current.temp + 2 },
