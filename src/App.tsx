@@ -163,6 +163,7 @@ function App() {
   const [leagues, setLeagues] = useState<League[]>([])
   const [editingLeagueId, setEditingLeagueId] = useState<number | null>(null)
   const [rankingScope, setRankingScope] = useState<'city' | 'state' | 'country' | 'world'>('city')
+  const [showRanking, setShowRanking] = useState(false)
   const [newLeague, setNewLeague] = useState({
     name: '',
     category: '',
@@ -886,8 +887,12 @@ function App() {
   }, [])
 
   const handleCreateLeague = useCallback(() => {
+    if (!newLeague.name || !newLeague.category) {
+      alert('Preencha nome e categoria.')
+      return
+    }
     const now = Date.now()
-    const fallbackName = 'Torneio sem nome'
+    const fallbackName = 'Liga'
     const fallbackCategory = 'Sem categoria'
 
     const entryFeeNumber = typeof newLeague.entryFee === 'string' && newLeague.entryFee.trim().length > 0 ? Number(newLeague.entryFee) : 0
@@ -956,36 +961,6 @@ function App() {
     setShowCreateLeague(false)
   }, [editingLeagueId, newLeague])
 
-  const handleEditLeague = useCallback((leagueId: number) => {
-    const league = leagues.find((l) => l.id === leagueId)
-    if (!league) return
-
-    setEditingLeagueId(leagueId)
-    setNewLeague({
-      name: league.name || '',
-      category: league.category || '',
-      rules: league.rules || '',
-      invitedFriendIds: league.invitedFriendIds || [],
-      prizePotEnabled: Boolean(league.prizePotEnabled),
-      prizePotType: league.prizePotType || 'fictitious',
-      entryFee: typeof league.entryFee === 'number' ? String(league.entryFee) : '',
-      tournamentName: league.tournamentName || '',
-      location: league.location || '',
-      startAt: league.startAt || '',
-      endAt: league.endAt || '',
-      allowedSpecies: league.allowedSpecies || '',
-      modality: league.modality || '',
-      boatMotor: league.boatMotor || '',
-      acceptTerms: Boolean(league.acceptTerms),
-      imageAuthorization: Boolean(league.imageAuthorization),
-      emergencyContact: league.emergencyContact || '',
-      liabilityTerm: Boolean(league.liabilityTerm),
-      weighingMethod: league.weighingMethod || '',
-      tiebreakCriteria: league.tiebreakCriteria || ''
-    })
-    setShowCreateLeague(true)
-  }, [leagues])
-
   const leagueRankings = useMemo(() => {
     const parseMs = (value?: string) => {
       if (!value) return null
@@ -1046,9 +1021,7 @@ function App() {
     }, {})
   }, [catches, friends, friendsGalleryPhotos, leagues])
 
-  const handleDeleteLeague = useCallback((leagueId: number) => {
-    setLeagues((prev) => prev.filter((l) => l.id !== leagueId))
-  }, [])
+  // handleDeleteLeague removido - funcionalidade desabilitada para usuários 50+
 
   // Close tips menu when clicking outside
   useEffect(() => {
@@ -2022,128 +1995,102 @@ function App() {
       {/* Leagues Tab */}
       {activeTab === 'leagues' && (
         <div className="pb-20 max-w-2xl mx-auto relative z-10">
-          <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 rounded-b-3xl shadow-lg">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Trophy className="w-7 h-7" />
-              Liga
-            </h1>
-            <p className="text-amber-100 text-sm mt-1">Competições e rankings entre pescadores</p>
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-b-3xl shadow-lg">
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold">Liga</h1>
+              <button
+                disabled
+                className="w-18 h-18 rounded-full bg-white/30 border-2 border-white/40 flex flex-col items-center justify-center gap-1 cursor-not-allowed p-2"
+              >
+                <Trophy className="w-7 h-7 text-white/60" />
+                <span className="text-xs font-bold text-white/60">Criar</span>
+              </button>
+            </div>
+            <p className="text-white/90 text-base mt-2">Veja sua posição e acompanhe torneios.</p>
           </div>
 
           <div className="p-4">
-            {/* Global Ranking Section */}
-            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
-              <h2 className="text-lg font-bold text-gray-800 mb-3">Seu Ranking Global</h2>
+            {/* Global Ranking Section - Collapsible */}
+            <div className="rounded-2xl mb-4">
+              <button
+                onClick={() => setShowRanking(!showRanking)}
+                className="w-full p-4 flex items-center justify-between text-left rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 border-2 border-white/30 shadow-md hover:from-orange-600 hover:to-orange-700 transition-colors"
+              >
+                <h2 className="text-xl font-bold text-white">Ranking Global</h2>
+                <ChevronRight className={`w-6 h-6 text-white/90 transition-transform ${showRanking ? 'rotate-90' : ''}`} />
+              </button>
               
-              {/* Scope Filter Buttons */}
-              <div className="grid grid-cols-4 gap-2 mb-4">
-                <button
-                  onClick={() => setRankingScope('city')}
-                  className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
-                    rankingScope === 'city'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Cidade
-                </button>
-                <button
-                  onClick={() => setRankingScope('state')}
-                  className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
-                    rankingScope === 'state'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Estado
-                </button>
-                <button
-                  onClick={() => setRankingScope('country')}
-                  className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
-                    rankingScope === 'country'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  País
-                </button>
-                <button
-                  onClick={() => setRankingScope('world')}
-                  className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
-                    rankingScope === 'world'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Mundo
-                </button>
-              </div>
+              {showRanking && (
+                <div className="px-4 pb-4 pt-4 bg-white rounded-b-2xl shadow-md border-2 border-gray-200 border-t-0">
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Ver ranking por</label>
+                    <select
+                      value={rankingScope}
+                      onChange={(e) => setRankingScope(e.target.value as 'city' | 'state' | 'country' | 'world')}
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white text-base font-semibold text-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                    >
+                      <option value="city">Cidade</option>
+                      <option value="state">Estado</option>
+                      <option value="country">País</option>
+                      <option value="world">Mundo</option>
+                    </select>
+                  </div>
 
-              {/* Ranking Display */}
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-semibold text-gray-600">
-                    {globalRanking[rankingScope].location}
-                  </div>
-                  <div className="flex items-center gap-1 text-amber-600">
-                    <Trophy className="w-4 h-4" />
-                    <span className="text-xs font-semibold">Ranking</span>
+                  {/* Ranking Display */}
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-base font-semibold text-gray-700">
+                        {globalRanking[rankingScope].location}
+                      </div>
+                      <div className="flex items-center gap-1 text-amber-600">
+                        <Trophy className="w-4 h-4" />
+                        <span className="text-xs font-semibold">Ranking</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-3xl font-bold text-amber-600">
+                          #{globalRanking[rankingScope].position}
+                        </div>
+                        <div className="text-sm text-gray-700 mt-1">
+                          de {globalRanking[rankingScope].total.toLocaleString('pt-BR')} pescadores
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <div className="text-base font-semibold text-gray-800">
+                          Top {((globalRanking[rankingScope].position / globalRanking[rankingScope].total) * 100).toFixed(1)}%
+                        </div>
+                        <div className="w-24 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-amber-500 to-orange-600 rounded-full"
+                            style={{ 
+                              width: `${Math.min(100, (1 - globalRanking[rankingScope].position / globalRanking[rankingScope].total) * 100)}%` 
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-3xl font-bold text-amber-600">
-                      #{globalRanking[rankingScope].position}
-                    </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                      de {globalRanking[rankingScope].total.toLocaleString('pt-BR')} pescadores
-                    </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-gray-700">
-                      Top {((globalRanking[rankingScope].position / globalRanking[rankingScope].total) * 100).toFixed(1)}%
-                    </div>
-                    <div className="w-24 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-amber-500 to-orange-600 rounded-full"
-                        style={{ 
-                          width: `${Math.min(100, (1 - globalRanking[rankingScope].position / globalRanking[rankingScope].total) * 100)}%` 
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
-            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-800">Crie sua própria liga</h2>
-                  <p className="text-sm text-gray-600">Defina categoria, regras e convide amigos</p>
-                </div>
-                <button
-                  onClick={() => setShowCreateLeague(true)}
-                  className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-colors"
-                >
-                  Criar
-                </button>
-              </div>
-            </div>
-
-            {leagues.length > 0 ? (
-              <div className="space-y-3">
-                {leagues.map((l) => (
+            {/* Ligas Próprias (se existirem) */}
+            {leagues.length > 0 && (
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-gray-800 mb-3 px-1">Minhas Ligas</h2>
+                <div className="space-y-3">
+                  {leagues.map((l) => (
                   <div key={l.id} className="bg-white rounded-2xl shadow-md p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-800">{l.name}</h3>
-                        <p className="text-sm text-gray-600 mt-0.5">Categoria: <span className="font-semibold">{l.category}</span></p>
-                        {l.rules && <p className="text-sm text-gray-600 mt-1">{l.rules}</p>}
+                        <h3 className="text-xl font-bold text-gray-900">{l.name}</h3>
+                        <p className="text-base text-gray-700 mt-1">Categoria: <span className="font-semibold">{l.category}</span></p>
+
                         {(l.location || l.startAt || l.endAt || l.allowedSpecies || l.modality || l.boatMotor) && (
-                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                          <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-gray-700">
                             {l.location && (
                               <div className="bg-gray-50 border border-gray-100 rounded-xl p-2">
                                 <span className="font-semibold">Local:</span> {l.location}
@@ -2159,80 +2106,8 @@ function App() {
                                 <span className="font-semibold">Fim:</span> {l.endAt}
                               </div>
                             )}
-                            {l.allowedSpecies && (
-                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-2 col-span-2">
-                                <span className="font-semibold">Espécies:</span> {l.allowedSpecies}
-                              </div>
-                            )}
-                            {l.modality && (
-                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-2">
-                                <span className="font-semibold">Modalidade:</span> {l.modality}
-                              </div>
-                            )}
-                            {l.boatMotor && (
-                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-2">
-                                <span className="font-semibold">Embarcação/Motor:</span> {l.boatMotor}
-                              </div>
-                            )}
                           </div>
                         )}
-
-                        {(l.acceptTerms || l.imageAuthorization || l.emergencyContact || l.liabilityTerm || l.weighingMethod || l.tiebreakCriteria) && (
-                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
-                            {typeof l.acceptTerms === 'boolean' && (
-                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2">
-                                <span className="font-semibold">Aceite termos:</span> {l.acceptTerms ? 'Sim' : 'Não'}
-                              </div>
-                            )}
-                            {typeof l.imageAuthorization === 'boolean' && (
-                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2">
-                                <span className="font-semibold">Uso de imagem:</span> {l.imageAuthorization ? 'Sim' : 'Não'}
-                              </div>
-                            )}
-                            {l.emergencyContact && (
-                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2 col-span-2">
-                                <span className="font-semibold">Emergência:</span> {l.emergencyContact}
-                              </div>
-                            )}
-                            {typeof l.liabilityTerm === 'boolean' && (
-                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2 col-span-2">
-                                <span className="font-semibold">Termo de responsabilidade:</span> {l.liabilityTerm ? 'Sim' : 'Não'}
-                              </div>
-                            )}
-                            {l.weighingMethod && (
-                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2">
-                                <span className="font-semibold">Pesagem:</span> {l.weighingMethod}
-                              </div>
-                            )}
-                            {l.tiebreakCriteria && (
-                              <div className="bg-amber-50 border border-amber-100 rounded-xl p-2">
-                                <span className="font-semibold">Desempate:</span> {l.tiebreakCriteria}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {l.invitedFriendIds.length > 0 ? (
-                            l.invitedFriendIds.map((id) => {
-                              const f = friends.find((x) => x.id === id)
-                              if (!f) return null
-                              return (
-                                <div
-                                  key={id}
-                                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 border border-amber-200"
-                                >
-                                  <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${f.gradient} text-white flex items-center justify-center text-[10px] font-bold`}>
-                                    {f.initials}
-                                  </div>
-                                  <span className="text-xs font-semibold text-amber-900">{f.name.split(' ')[0]}</span>
-                                </div>
-                              )
-                            })
-                          ) : (
-                            <span className="text-xs text-gray-500">Sem convites ainda</span>
-                          )}
-                        </div>
 
                         {leagueRankings[l.id] && (
                           <div className="mt-4 bg-gray-50 border border-gray-100 rounded-2xl p-3">
@@ -2265,46 +2140,24 @@ function App() {
                           </div>
                         )}
 
-                        <div className="mt-4 flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditLeague(l.id)}
-                            className="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200 transition-colors"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => handleDeleteLeague(l.id)}
-                            className="px-3 py-1.5 rounded-xl bg-red-50 text-red-700 text-xs font-semibold hover:bg-red-100 transition-colors"
-                          >
-                            Excluir
-                          </button>
-                        </div>
                       </div>
                       <div className="text-[10px] text-gray-500 whitespace-nowrap">
                         {new Date(l.createdAt).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl shadow-md p-6 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Trophy className="w-10 h-10 text-amber-600" />
+                  ))}
                 </div>
-                <h3 className="text-lg font-bold text-gray-800">Nenhuma liga criada</h3>
-                <p className="text-sm text-gray-600 mt-1">Crie uma liga e convide seus amigos para competir</p>
               </div>
             )}
 
-            <div className="mt-6">
-              <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
-                <h2 className="text-lg font-bold text-gray-800">Torneios</h2>
-                <p className="text-sm text-gray-600">Inscreva-se em competições</p>
-              </div>
-
-              <div className="space-y-4">
-                {championships.map((championship) => (
+            {/* Torneios */}
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-3 px-1">Torneios</h2>
+              <div className="space-y-3">
+                {championships
+                  .sort(() => Math.random() - 0.5)
+                  .map((championship) => (
                   <div key={championship.id} className="bg-white rounded-xl p-5 shadow-md">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
@@ -2365,7 +2218,7 @@ function App() {
         </div>
       )}
 
-      {showCreateLeague && (
+      {false && showCreateLeague && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
           <div
             className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto overscroll-contain"
