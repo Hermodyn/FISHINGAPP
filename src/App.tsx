@@ -54,6 +54,7 @@ interface Championship {
   participants: number
   maxParticipants: number
   status: 'open' | 'closed' | 'ongoing'
+  distanceKm?: number
 }
 
 interface Sponsor {
@@ -164,6 +165,14 @@ function App() {
   const [editingLeagueId, setEditingLeagueId] = useState<number | null>(null)
   const [rankingScope, setRankingScope] = useState<'city' | 'state' | 'country' | 'world'>('city')
   const [showRanking, setShowRanking] = useState(false)
+  const [showCreateTournament, setShowCreateTournament] = useState(false)
+  const [newTournament, setNewTournament] = useState({
+    name: '',
+    location: '',
+    date: '',
+    prize: '',
+    maxParticipants: '30'
+  })
   const [newLeague, setNewLeague] = useState({
     name: '',
     category: '',
@@ -595,12 +604,51 @@ function App() {
   }, [selectedPhoto])
 
   // Championships Data
-  const [championships] = useState<Championship[]>([
-    { id: 1, name: 'São Paulo Bass Championship 2026', location: 'Represa Billings', date: '2026-03-15', prize: 'R$ 10,000', participants: 45, maxParticipants: 50, status: 'open' },
-    { id: 2, name: 'Guarapiranga Fishing Tournament', location: 'Represa Guarapiranga', date: '2026-03-22', prize: 'R$ 5,000 + Equipments', participants: 32, maxParticipants: 40, status: 'open' },
-    { id: 3, name: 'Winter Fishing Challenge', location: 'Pesqueiro Maeda', date: '2026-04-10', prize: 'R$ 8,000', participants: 28, maxParticipants: 35, status: 'open' },
-    { id: 4, name: 'Taboão Lake Masters', location: 'Lago do Taboão', date: '2026-02-25', prize: 'R$ 3,000', participants: 25, maxParticipants: 25, status: 'ongoing' }
+  const [championships, setChampionships] = useState<Championship[]>([
+    { id: 1, name: 'São Paulo Bass Championship 2026', location: 'Represa Billings', date: '2026-03-15', prize: 'R$ 10,000', participants: 45, maxParticipants: 50, status: 'open', distanceKm: 8 },
+    { id: 2, name: 'Guarapiranga Fishing Tournament', location: 'Represa Guarapiranga', date: '2026-03-22', prize: 'R$ 5,000 + Equipments', participants: 32, maxParticipants: 40, status: 'open', distanceKm: 14 },
+    { id: 3, name: 'Winter Fishing Challenge', location: 'Pesqueiro Maeda', date: '2026-04-10', prize: 'R$ 8,000', participants: 28, maxParticipants: 35, status: 'open', distanceKm: 22 },
+    { id: 4, name: 'Taboão Lake Masters', location: 'Lago do Taboão', date: '2026-02-25', prize: 'R$ 3,000', participants: 25, maxParticipants: 25, status: 'ongoing', distanceKm: 5 }
   ])
+
+  const sortedChampionshipsByDistance = useMemo(() => {
+    return championships
+      .slice()
+      .sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
+  }, [championships])
+
+  const handleCreateTournament = useCallback(() => {
+    const name = newTournament.name.trim()
+    const location = newTournament.location.trim()
+    const date = newTournament.date.trim()
+    const prize = newTournament.prize.trim()
+    const maxParticipantsNumber = Number(newTournament.maxParticipants)
+
+    if (!name || !location || !date) {
+      alert('Preencha Nome, Local e Data.')
+      return
+    }
+
+    const maxParticipants = Number.isFinite(maxParticipantsNumber) && maxParticipantsNumber > 0 ? maxParticipantsNumber : 30
+    const now = Date.now()
+    const distanceKm = Math.max(1, Math.round(Math.random() * 40))
+
+    const created: Championship = {
+      id: now,
+      name,
+      location,
+      date,
+      prize: prize || '—',
+      participants: 0,
+      maxParticipants,
+      status: 'open',
+      distanceKm
+    }
+
+    setChampionships((prev) => [created, ...prev])
+    setShowCreateTournament(false)
+    setNewTournament({ name: '', location: '', date: '', prize: '', maxParticipants: '30' })
+  }, [newTournament])
 
   // Sponsors Data
   const [sponsors] = useState<Sponsor[]>([
@@ -1992,6 +2040,71 @@ function App() {
         </div>
       )}
 
+      {showCreateTournament && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto overscroll-contain"
+            onClick={(e) => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Criar Torneio</h2>
+              <button
+                onClick={() => setShowCreateTournament(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Nome do Torneio"
+                value={newTournament.name}
+                onChange={(e) => setNewTournament((p) => ({ ...p, name: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Local (ex: Represa, Praia, Pesqueiro)"
+                value={newTournament.location}
+                onChange={(e) => setNewTournament((p) => ({ ...p, location: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+              />
+              <input
+                type="date"
+                value={newTournament.date}
+                onChange={(e) => setNewTournament((p) => ({ ...p, date: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Prêmio (opcional)"
+                value={newTournament.prize}
+                onChange={(e) => setNewTournament((p) => ({ ...p, prize: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+              />
+              <input
+                type="number"
+                min={1}
+                placeholder="Máximo de participantes"
+                value={newTournament.maxParticipants}
+                onChange={(e) => setNewTournament((p) => ({ ...p, maxParticipants: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+              />
+
+              <button
+                onClick={handleCreateTournament}
+                className="w-full py-3 rounded-xl font-semibold transition-colors active:scale-95 bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
+              >
+                Criar Torneio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Leagues Tab */}
       {activeTab === 'leagues' && (
         <div className="pb-20 max-w-2xl mx-auto relative z-10">
@@ -1999,8 +2112,8 @@ function App() {
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold">Liga</h1>
               <button
-                disabled
-                className="w-18 h-18 rounded-full bg-white/30 border-2 border-white/40 flex flex-col items-center justify-center gap-1 cursor-not-allowed p-2"
+                onClick={() => setShowCreateTournament(true)}
+                className="w-18 h-18 rounded-full bg-white/30 border-2 border-white/40 flex flex-col items-center justify-center gap-1 p-2 hover:bg-white/35 active:scale-95 transition"
               >
                 <Trophy className="w-7 h-7 text-white/60" />
                 <span className="text-xs font-bold text-white/60">Criar</span>
@@ -2155,9 +2268,7 @@ function App() {
             <div>
               <h2 className="text-xl font-bold text-gray-800 mb-3 px-1">Torneios</h2>
               <div className="space-y-3">
-                {championships
-                  .sort(() => Math.random() - 0.5)
-                  .map((championship) => (
+                {sortedChampionshipsByDistance.map((championship) => (
                   <div key={championship.id} className="bg-white rounded-xl p-5 shadow-md">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
@@ -2170,6 +2281,11 @@ function App() {
                           <Calendar className="w-4 h-4" />
                           <span>{new Date(championship.date).toLocaleDateString('pt-BR', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                         </div>
+                        {typeof championship.distanceKm === 'number' && (
+                          <div className="mt-2 text-sm font-semibold text-orange-700">
+                            Distância: {championship.distanceKm} km
+                          </div>
+                        )}
                       </div>
                       <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         championship.status === 'open' ? 'bg-green-100 text-green-700' :
