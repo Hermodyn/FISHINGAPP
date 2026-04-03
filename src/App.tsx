@@ -734,6 +734,7 @@ function App() {
   const [identifyLoading, setIdentifyLoading] = useState(false)
   const [locationLoading, setLocationLoading] = useState(false)
   const [photoCapturedAt, setPhotoCapturedAt] = useState<number | null>(null)
+  const [showSpeciesDropdown, setShowSpeciesDropdown] = useState(false)
 
   const identifyFishFromFile = useCallback(async (file: File) => {
     const now = Date.now()
@@ -3579,7 +3580,7 @@ function App() {
 
       {showAddCatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 max-h-[90vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">Nova Captura</h2>
               <button
@@ -3590,9 +3591,6 @@ function App() {
               </button>
             </div>
             <div className="space-y-3">
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-3 text-sm">
-                Registro somente em tempo real: foto + GPS no momento da captura.
-              </div>
               {registerError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">
                   {registerError}
@@ -3616,46 +3614,34 @@ function App() {
                 IA Scan - Identificar Peixe
               </button>
 
-              <select
-                value={newCatch.species === '' || fishSpecies.includes(newCatch.species) ? newCatch.species : 'Outro'}
-                onChange={(e) => {
-                  if (e.target.value === 'Outro') {
-                    setNewCatch({ ...newCatch, species: '' })
-                  } else {
-                    setNewCatch({ ...newCatch, species: e.target.value })
-                  }
-                }}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-              >
-                <option value="">Espécie do peixe</option>
-                <option value="Tilápia">Tilápia</option>
-                <option value="Traíra">Traíra</option>
-                <option value="Lambari">Lambari</option>
-                <option value="Tucunaré">Tucunaré</option>
-                <option value="Corvina">Corvina</option>
-                <option value="Robalo">Robalo</option>
-                <option value="Pacu">Pacu</option>
-                <option value="Pintado">Pintado</option>
-                <option value="Dourado">Dourado</option>
-                <option value="Bagre">Bagre</option>
-                <option value="Carpa">Carpa</option>
-                <option value="Piracanjuba">Piracanjuba</option>
-                <option value="Curimbatá">Curimbatá</option>
-                <option value="Mandi">Mandi</option>
-                <option value="Cascudo">Cascudo</option>
-                <option value="Outro">✏️ Outro (digitar)</option>
-              </select>
-              
-              {(newCatch.species === '' || !fishSpecies.includes(newCatch.species)) && newCatch.species !== '' && (
+              <div className="relative">
                 <input
                   type="text"
-                  placeholder="Digite a espécie do peixe"
+                  placeholder="Espécie do peixe"
                   value={newCatch.species}
                   onChange={(e) => setNewCatch({ ...newCatch, species: e.target.value })}
-                  className="w-full p-3 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-blue-50"
-                  autoFocus
+                  onFocus={() => setShowSpeciesDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowSpeciesDropdown(false), 200)}
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
                 />
-              )}
+                {showSpeciesDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {fishSpecies.map((species) => (
+                      <button
+                        key={species}
+                        type="button"
+                        onClick={() => {
+                          setNewCatch({ ...newCatch, species })
+                          setShowSpeciesDropdown(false)
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors"
+                      >
+                        {species}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="number"
