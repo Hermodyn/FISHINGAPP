@@ -2,6 +2,24 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2, ArrowUpDown } from 'lucide-react'
 import './App.css'
 
+const fishingQuotes = [
+  "A paciência do pescador é recompensada com a alegria da captura.",
+  "No silêncio das águas, encontramos a paz que procuramos.",
+  "Cada peixe tem uma história, cada pescaria é uma aventura.",
+  "O melhor momento para pescar é quando você pode.",
+  "A pesca não é apenas sobre pegar peixes, é sobre criar memórias.",
+  "Águas calmas nunca fizeram bons pescadores.",
+  "O peixe que escapou sempre parece maior.",
+  "Pescar é a arte de esperar com esperança.",
+  "Um dia ruim de pesca ainda é melhor que um bom dia de trabalho.",
+  "O pescador sabe que o mar não perdoa, mas sempre convida.",
+  "Curiosidade: O maior peixe já capturado foi um tubarão-baleia de 21 toneladas!",
+  "Você sabia? Peixes podem reconhecer rostos humanos.",
+  "Dica: Os peixes mordem mais ao amanhecer e ao entardecer.",
+  "Anedota: Por que o peixe não joga poker? Porque tem medo de anzóis!",
+  "Sabedoria: Dê um peixe a um homem e o alimentará por um dia. Ensine-o a pescar e o alimentará para sempre."
+]
+
 interface Catch {
   id: number
   species: string
@@ -137,6 +155,7 @@ interface League {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true)
   const [activeTab, setActiveTab] = useState<'home' | 'catches' | 'spots' | 'subscription' | 'community' | 'leagues' | 'stats' | 'weather' | 'friendsGallery'>('home')
   const [showAddCatch, setShowAddCatch] = useState(false)
   const [showTips, setShowTips] = useState(false)
@@ -1171,17 +1190,172 @@ function App() {
   // Memoize fish species list
   const fishSpecies = useMemo(() => ['Tilápia', 'Traíra', 'Lambari', 'Tucunaré', 'Corvina', 'Robalo', 'Pacu', 'Pintado', 'Dourado', 'Bagre', 'Carpa', 'Piracanjuba', 'Curimbatá', 'Mandi', 'Cascudo'], [])
 
+  // App Icon Component - Phone with Fish and Hook
+  const AppIcon = () => (
+    <div className="relative w-40 h-40 flex items-center justify-center">
+      {/* Phone - Inclined with simple rectangle */}
+      <div className="relative transform rotate-12">
+        {/* Phone body - simple rectangle */}
+        <div className="w-20 h-32 bg-white rounded-lg shadow-2xl border-4 border-blue-500 relative overflow-hidden">
+          {/* Screen - white/light */}
+          <div className="absolute inset-2 bg-blue-50/50 rounded-sm overflow-hidden">
+            {/* Fish inside screen - compact with smooth contours */}
+            <div className="absolute top-10 left-2">
+              <svg width="32" height="24" viewBox="0 0 32 24" fill="none" className="text-blue-500">
+                {/* Round body - compact */}
+                <ellipse cx="14" cy="12" rx="10" ry="11" fill="currentColor"/>
+                {/* Head curve - smooth */}
+                <path d="M22 6 Q26 12 22 18" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                {/* Tail - crescent */}
+                <path d="M4 12 Q2 8 0 7 Q2 12 0 17 Q2 16 4 12 Z" fill="currentColor"/>
+                {/* Top fin - small */}
+                <path d="M12 2 Q13 5 12 8" stroke="currentColor" strokeWidth="1.5" fill="currentColor" opacity="0.8"/>
+                {/* Eye */}
+                <circle cx="19" cy="11" r="1.8" fill="white"/>
+                <circle cx="19.5" cy="10.5" r="0.8" fill="#1e40af"/>
+                {/* Body stripe */}
+                <path d="M14 9 L14 15" stroke="white" strokeWidth="0.8" opacity="0.3"/>
+              </svg>
+            </div>
+
+            {/* Fishing Hook - compact */}
+            <div className="absolute top-4 right-2">
+              <div className="w-0.5 h-8 bg-blue-500/60"></div>
+              <svg width="12" height="14" viewBox="0 0 12 14" fill="none" className="absolute top-6 -left-1.5 text-blue-500">
+                <path d="M6 0 L6 8 Q6 11 3 11 Q1.5 11 1.5 9.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 10.5 L4 13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </div>
+          {/* Home button */}
+          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-500 rounded-full"></div>
+        </div>
+      </div>
+
+      {/* Wave signals - outside phone */}
+      <div className="absolute top-4 right-2">
+        <svg width="32" height="20" viewBox="0 0 32 20" fill="none" className="text-blue-500">
+          <path d="M2 10 Q8 6 14 10" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.4"/>
+          <path d="M4 10 Q8 8 12 10" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.6"/>
+        </svg>
+      </div>
+    </div>
+  )
+
+  // Splash Screen Component
+  const SplashScreen = () => {
+    const [displayedText, setDisplayedText] = useState('')
+    const [currentQuote] = useState(() => fishingQuotes[Math.floor(Math.random() * fishingQuotes.length)])
+    const [showWaveTransition, setShowWaveTransition] = useState(false)
+    
+    useEffect(() => {
+      let index = 0
+      const typingInterval = setInterval(() => {
+        if (index <= currentQuote.length) {
+          setDisplayedText(currentQuote.slice(0, index))
+          index++
+        } else {
+          clearInterval(typingInterval)
+        }
+      }, 50)
+      
+      return () => clearInterval(typingInterval)
+    }, [currentQuote])
+
+    const handleAnchorClick = () => {
+      setShowWaveTransition(true)
+      setTimeout(() => {
+        setShowSplash(false)
+      }, 1500)
+    }
+    
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-gradient-to-b from-blue-900/80 via-blue-700/80 to-blue-500/80">
+        {/* Background Image with Animation */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center ocean-wave"
+          style={{ 
+            backgroundImage: "url('/Fundo.jpg')",
+            opacity: 0.8,
+            animation: 'wave 20s ease-in-out infinite'
+          }}
+        />
+
+        {/* Wave Transition Animation */}
+        {showWaveTransition && (
+          <div className="absolute inset-0 z-50 pointer-events-none overflow-hidden">
+            {/* Multiple wave layers for depth */}
+            <svg className="absolute bottom-0 left-0 right-0 w-full wave-rise" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height: '100vh', animationDelay: '0s' }}>
+              <path
+                d="M0,100 Q25,95 50,100 T100,100 L100,0 L0,0 Z"
+                fill="#0d9488"
+                opacity="0.9"
+              />
+            </svg>
+            <svg className="absolute bottom-0 left-0 right-0 w-full wave-rise" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height: '100vh', animationDelay: '0.1s' }}>
+              <path
+                d="M0,100 Q25,93 50,100 T100,100 L100,0 L0,0 Z"
+                fill="#14b8a6"
+                opacity="0.7"
+              />
+            </svg>
+            <svg className="absolute bottom-0 left-0 right-0 w-full wave-rise" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height: '100vh', animationDelay: '0.2s' }}>
+              <path
+                d="M0,100 Q25,90 50,100 T100,100 L100,0 L0,0 Z"
+                fill="#2dd4bf"
+                opacity="0.5"
+              />
+            </svg>
+          </div>
+        )}
+        
+        {/* Content */}
+        <div className="relative z-10 flex flex-col items-center justify-between h-full w-full px-8 py-12">
+          {/* App Icon at Top */}
+          <div className="text-center mt-8">
+            <AppIcon />
+            <p className="text-white text-sm tracking-widest mt-4 font-semibold">FISHER'S GUIDAPP</p>
+          </div>
+          
+          {/* Quote in the Middle */}
+          <div className="flex-1 flex items-center justify-center px-6">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl max-w-md">
+              <p className="text-white text-lg text-center leading-relaxed font-medium min-h-[4rem]">
+                {displayedText}
+                <span className="animate-pulse">|</span>
+              </p>
+            </div>
+          </div>
+          
+          {/* Anchor Icon at Bottom */}
+          <button
+            onClick={handleAnchorClick}
+            className="mb-8 transform transition-all duration-300 hover:scale-110 active:scale-95"
+          >
+            <Anchor className="w-12 h-12 text-white animate-bounce" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (showSplash) {
+    return <SplashScreen />
+  }
+
   return (
     <div className="min-h-screen pb-24 relative" style={{ background: "linear-gradient(180deg, hsl(200 60% 85%) 0%, hsl(175 50% 70%) 100%)" }}>
-      {/* Background Image with Opacity and Wave Animation */}
-      <div 
-        className="fixed inset-0 z-0 bg-cover bg-center ocean-wave pointer-events-none"
-        style={{ 
-          backgroundImage: "url('/Fundo.jpg')",
-          opacity: 0.15,
-          filter: 'grayscale(100%)'
-        }}
-      />
+      {/* Background Image - Fixed and Solid (hidden on spots, home, leagues, community tabs) */}
+      {!['spots', 'home', 'leagues', 'community'].includes(activeTab) && (
+        <div 
+          className="fixed inset-0 z-0 bg-cover bg-center pointer-events-none"
+          style={{ 
+            backgroundImage: "url('/Fundo.jpg')",
+            opacity: 0.15,
+            filter: 'grayscale(100%)'
+          }}
+        />
+      )}
       
       {activeTab === 'home' && (
         <div className="max-w-lg mx-auto relative z-10" style={{ padding: '5mm' }}>

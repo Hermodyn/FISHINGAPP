@@ -1,0 +1,25 @@
+@keyframes wave {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.05) translateY(-10px);
+  }
+}
+
+.ocean-wave {
+  animation: wave 20s ease-in-out infinite;
+}
+
+@keyframes waveRise {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-100vh);
+  }
+}
+
+.wave-rise {
+  animation: waveRise 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
