@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2, ArrowUpDown } from 'lucide-react'
 import './App.css'
 
 interface Catch {
@@ -148,6 +148,9 @@ function App() {
   const [photoLikes, setPhotoLikes] = useState<Record<number, boolean>>({})
   const [photoComments, setPhotoComments] = useState<Record<number, string[]>>({})
   const [photoCaptions, setPhotoCaptions] = useState<Record<number, string>>({})
+  const [photoFavorites, setPhotoFavorites] = useState<Record<number, boolean>>({})
+  const [gallerySortBy, setGallerySortBy] = useState<'date' | 'weight' | 'likes' | 'comments' | 'favorites'>('date')
+  const [showSortOptions, setShowSortOptions] = useState(false)
   const [showPhotoComments, setShowPhotoComments] = useState(false)
   const [newPhotoComment, setNewPhotoComment] = useState('')
   const [registerLoading, setRegisterLoading] = useState(false)
@@ -478,6 +481,46 @@ function App() {
     return combined
   }, [catches, photoGallery])
 
+  const sortedMineGalleryPhotos = useMemo(() => {
+    const photos = [...mineGalleryPhotos]
+    
+    switch (gallerySortBy) {
+      case 'date':
+        return photos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      
+      case 'weight':
+        return photos.sort((a, b) => {
+          const weightA = a.weight || 0
+          const weightB = b.weight || 0
+          return weightB - weightA
+        })
+      
+      case 'likes':
+        return photos.sort((a, b) => {
+          const likesA = photoLikes[a.id] ? 1 : 0
+          const likesB = photoLikes[b.id] ? 1 : 0
+          return likesB - likesA
+        })
+      
+      case 'comments':
+        return photos.sort((a, b) => {
+          const commentsA = photoComments[a.id]?.length || 0
+          const commentsB = photoComments[b.id]?.length || 0
+          return commentsB - commentsA
+        })
+      
+      case 'favorites':
+        return photos.sort((a, b) => {
+          const favA = photoFavorites[a.id] ? 1 : 0
+          const favB = photoFavorites[b.id] ? 1 : 0
+          return favB - favA
+        })
+      
+      default:
+        return photos
+    }
+  }, [mineGalleryPhotos, gallerySortBy, photoLikes, photoComments, photoFavorites])
+
   const friendsGalleryPhotos = useMemo(() => {
     const mock = [
       { id: 101, url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=500', date: '2026-02-16', weight: 4.8, friendName: 'John Fisher' },
@@ -548,8 +591,32 @@ function App() {
     }
   }, [photoCaptions])
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('fishingapp.photoFavorites.v1')
+      if (!raw) return
+      const parsed = JSON.parse(raw) as unknown
+      if (!parsed || typeof parsed !== 'object') return
+      setPhotoFavorites(parsed as Record<number, boolean>)
+    } catch {
+      return
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('fishingapp.photoFavorites.v1', JSON.stringify(photoFavorites))
+    } catch {
+      return
+    }
+  }, [photoFavorites])
+
   const handleToggleLikePhoto = useCallback((photoId: number) => {
     setPhotoLikes((prev) => ({ ...prev, [photoId]: !prev[photoId] }))
+  }, [])
+
+  const handleToggleFavorite = useCallback((photoId: number) => {
+    setPhotoFavorites((prev) => ({ ...prev, [photoId]: !prev[photoId] }))
   }, [])
 
   const handleAddPhotoComment = useCallback((photoId: number) => {
@@ -1329,7 +1396,7 @@ function App() {
                     galleryMode === 'mine' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  Minhas fotos
+                  Minhas Capturas
                 </button>
                 <button
                   onClick={() => setGalleryMode('friends')}
@@ -1337,15 +1404,91 @@ function App() {
                     galleryMode === 'friends' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  Fotos dos amigos
+                  Capturas dos Amigos
                 </button>
               </div>
             </div>
 
+            {galleryMode === 'mine' && (
+              <>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowSortOptions(!showSortOptions)}
+                    className="p-1 transition-opacity hover:opacity-70"
+                  >
+                    <ArrowUpDown className="w-5 h-5 text-blue-800" />
+                  </button>
+                </div>
+
+                {showSortOptions && (
+                  <div className="mt-3 bg-white rounded-2xl shadow-md p-3">
+                    <p className="text-xs text-gray-600 mb-2 font-semibold">Organizar por:</p>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('date')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'date' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        📅 Data
+                      </button>
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('weight')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'weight' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ⚖️ Peso
+                      </button>
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('likes')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'likes' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ❤️ Curtidas
+                      </button>
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('comments')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'comments' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        💬 Comentários
+                      </button>
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('favorites')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'favorites' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ⭐ Favoritas
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
             <div className="mt-3 bg-white rounded-2xl shadow-md overflow-hidden">
               <div className="max-h-[70vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <div className="grid grid-cols-3" style={{ gap: '0.5mm' }}>
-                  {(galleryMode === 'mine' ? mineGalleryPhotos : friendsGalleryPhotos).map((photo) => {
+                  {(galleryMode === 'mine' ? sortedMineGalleryPhotos : friendsGalleryPhotos).map((photo) => {
                   const weight = typeof photo.weight === 'number' ? photo.weight : undefined
                   const catchId = 'catchId' in photo ? photo.catchId : undefined
                   const rankMine = galleryMode === 'mine' && typeof catchId === 'number'
@@ -1576,13 +1719,84 @@ function App() {
 
             {galleryMode === 'mine' && (
               <>
+                {/* Sort Icon Button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowSortOptions(!showSortOptions)}
+                    className="p-1 transition-opacity hover:opacity-70"
+                  >
+                    <ArrowUpDown className="w-5 h-5 text-blue-800" />
+                  </button>
+                </div>
+
+                {/* Filter Buttons - Collapsible */}
+                {showSortOptions && (
+                  <div className="bg-white rounded-2xl shadow-md p-3 animate-slide-down">
+                    <p className="text-xs text-gray-600 mb-2 font-semibold">Organizar por:</p>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('date')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'date' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        📅 Data
+                      </button>
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('weight')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'weight' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ⚖️ Peso
+                      </button>
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('likes')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'likes' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ❤️ Curtidas
+                      </button>
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('comments')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'comments' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        💬 Comentários
+                      </button>
+                      <button
+                        onClick={() => {
+                          setGallerySortBy('favorites')
+                          setShowSortOptions(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                          gallerySortBy === 'favorites' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ⭐ Favoritas
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Photo Gallery - Complete */}
                 <div>
                   <div className="grid grid-cols-3 gap-2">
-                    {mineGalleryPhotos
-                      .slice()
-                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                      .map((photo) => {
+                    {sortedMineGalleryPhotos.map((photo) => {
                         const weight = typeof photo.weight === 'number' ? photo.weight : undefined
                         const catchId = 'catchId' in photo ? photo.catchId : undefined
                         const rankMine = typeof catchId === 'number' ? top3CatchIdsByWeight.indexOf(catchId) : -1
@@ -3408,29 +3622,38 @@ function App() {
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => handleToggleLikePhoto(selectedPhoto.id)}
-                    className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                    className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
                     aria-label="Curtir"
                   >
                     <Heart className={`w-6 h-6 ${photoLikes[selectedPhoto.id] ? 'fill-red-500 text-red-500' : ''}`} />
-                    <span className="text-sm font-semibold">Curtir</span>
+                    <span className="text-xs font-semibold">Curtir</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleToggleFavorite(selectedPhoto.id)}
+                    className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
+                    aria-label="Favoritar"
+                  >
+                    <span className={`text-2xl ${photoFavorites[selectedPhoto.id] ? '' : 'grayscale opacity-50'}`}>⭐</span>
+                    <span className="text-xs font-semibold">Favorita</span>
                   </button>
 
                   <button
                     onClick={() => setShowPhotoComments((v) => !v)}
-                    className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                    className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
                     aria-label="Comentar"
                   >
                     <MessageCircle className="w-6 h-6" />
-                    <span className="text-sm font-semibold">Comentar</span>
+                    <span className="text-xs font-semibold">Comentar</span>
                   </button>
 
                   <button
                     onClick={handleShareSelectedPhoto}
-                    className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                    className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
                     aria-label="Compartilhar"
                   >
                     <Share2 className="w-6 h-6" />
-                    <span className="text-sm font-semibold">Compartilhar</span>
+                    <span className="text-xs font-semibold">Compartilhar</span>
                   </button>
                 </div>
 
