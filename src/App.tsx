@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2, ArrowUpDown } from 'lucide-react'
+import { Fish, MapPin, Cloud, TrendingUp, Plus, Calendar, Weight, Wind, Sunrise, Droplets, Anchor, Activity, Camera, Trophy, Users, Scan, Award, Info, Wrench, Target, ChevronLeft, ChevronRight, Heart, MessageCircle, Share2, ArrowUpDown, QrCode } from 'lucide-react'
+import QRCode from 'qrcode'
+import { Html5Qrcode } from 'html5-qrcode'
 import './App.css'
 
 const fishingQuotes = [
@@ -206,6 +208,7 @@ function App() {
   const [showRanking, setShowRanking] = useState(false)
   const [showCreateTournament, setShowCreateTournament] = useState(false)
   const [showTournamentCompetitors, setShowTournamentCompetitors] = useState(false)
+  const [tournamentError, setTournamentError] = useState('')
   const [newTournament, setNewTournament] = useState({
     name: '',
     category: '',
@@ -715,6 +718,11 @@ function App() {
     phone: '',
     cpf: ''
   })
+  
+  const [showQRCodeModal, setShowQRCodeModal] = useState(false)
+  const [qrCodeDataURL, setQRCodeDataURL] = useState('')
+  const [showQRScanner, setShowQRScanner] = useState(false)
+  const qrScannerRef = useRef<Html5Qrcode | null>(null)
 
   const sortedChampionshipsByDistance = useMemo(() => {
     return championships
@@ -756,6 +764,100 @@ function App() {
     setEnrollmentForm({ name: '', email: '', phone: '', cpf: '' })
   }, [selectedChampionshipId, enrollmentForm])
 
+  const handleGenerateQRCode = useCallback(async (championshipId: number) => {
+    const championship = championships.find(c => c.id === championshipId)
+    if (!championship) return
+    
+    const qrData = JSON.stringify({
+      type: 'tournament',
+      id: championship.id,
+      name: championship.name,
+      location: championship.location,
+      date: championship.date,
+      prize: championship.prize,
+      maxParticipants: championship.maxParticipants,
+      status: championship.status
+    })
+    
+    try {
+      const dataURL = await QRCode.toDataURL(qrData, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
+      setQRCodeDataURL(dataURL)
+      setSelectedChampionshipId(championshipId)
+      setShowQRCodeModal(true)
+    } catch (err) {
+      console.error('Erro ao gerar QR Code:', err)
+      alert('Erro ao gerar QR Code')
+    }
+  }, [championships])
+
+  const handleStartQRScanner = useCallback(() => {
+    // Apenas abre o modal de upload, sem tentar acessar a câmera
+    setShowQRScanner(true)
+  }, [])
+
+  const handleStopQRScanner = useCallback(async () => {
+    if (qrScannerRef.current) {
+      try {
+        await qrScannerRef.current.stop()
+        qrScannerRef.current = null
+      } catch (err) {
+        console.error('Erro ao parar scanner:', err)
+      }
+    }
+    setShowQRScanner(false)
+  }, [])
+
+  const handleQRImageUpload = useCallback(async (file: File) => {
+    try {
+      const html5QrCode = new Html5Qrcode('qr-reader-file')
+      
+      const decodedText = await html5QrCode.scanFile(file, false)
+      
+      try {
+        const tournamentData = JSON.parse(decodedText)
+        
+        if (tournamentData.type === 'tournament') {
+          const exists = championships.find(c => c.id === tournamentData.id)
+          
+          if (!exists) {
+            const newTournament: Championship = {
+              id: tournamentData.id,
+              name: tournamentData.name,
+              location: tournamentData.location,
+              date: tournamentData.date,
+              prize: tournamentData.prize,
+              participants: 0,
+              maxParticipants: tournamentData.maxParticipants,
+              status: tournamentData.status,
+              distanceKm: Math.round(Math.random() * 30) + 5
+            }
+            
+            setChampionships(prev => [newTournament, ...prev])
+            alert('Torneio adicionado com sucesso!')
+            setShowQRScanner(false)
+          } else {
+            alert('Este torneio já está na sua lista!')
+          }
+        } else {
+          alert('QR Code inválido. Use um QR Code de torneio.')
+        }
+      } catch (err) {
+        console.error('Erro ao processar QR Code:', err)
+        alert('QR Code inválido ou não é um torneio.')
+      }
+    } catch (err) {
+      console.error('Erro ao ler arquivo:', err)
+      alert('Erro ao ler a imagem. Tente novamente.')
+    }
+  }, [championships])
+
   const handleCreateTournament = useCallback(() => {
     const name = newTournament.name.trim()
     const location = newTournament.location.trim()
@@ -764,7 +866,7 @@ function App() {
     const entryFee = Number.isFinite(entryFeeNumber) ? entryFeeNumber : 0
 
     if (!name || !category || !location) {
-      alert('Preencha Nome, Tipo de competição e Local.')
+      setTournamentError('Preencha Nome, Tipo de competição e Local.')
       return
     }
 
@@ -2501,6 +2603,103 @@ function App() {
         </div>
       )}
 
+      {/* QR Code Display Modal */}
+      {showQRCodeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">QR Code do Torneio</h2>
+              <button
+                onClick={() => {
+                  setShowQRCodeModal(false)
+                  setQRCodeDataURL('')
+                  setSelectedChampionshipId(null)
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-4">
+                Compartilhe este QR Code com seus amigos para que eles possam se inscrever no torneio!
+              </p>
+              
+              {qrCodeDataURL && (
+                <div className="bg-white p-4 rounded-xl border-2 border-gray-200 inline-block">
+                  <img src={qrCodeDataURL} alt="QR Code do Torneio" className="w-64 h-64" />
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500 mt-4">
+                Os participantes devem usar o botão "Ler QR" na aba Liga para escanear este código.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Scanner Modal */}
+      {showQRScanner && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Adicionar Torneio via QR Code</h2>
+              <button
+                onClick={() => setShowQRScanner(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="text-center mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                <QrCode className="w-16 h-16 mx-auto mb-2 text-blue-600" />
+                <p className="text-sm text-gray-700">
+                  Envie uma foto ou screenshot do QR Code do torneio que você deseja adicionar
+                </p>
+              </div>
+
+              <label className="block w-full">
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      void handleQRImageUpload(file)
+                    }
+                    e.target.value = ''
+                  }}
+                />
+                <div className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-semibold hover:scale-105 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2">
+                  <Camera className="w-6 h-6" />
+                  Tirar Foto / Selecionar Imagem
+                </div>
+              </label>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+              <p className="text-xs text-gray-600">
+                <strong>Como funciona:</strong>
+              </p>
+              <ol className="text-xs text-gray-600 mt-2 space-y-1 list-decimal list-inside">
+                <li>Peça ao criador do torneio para mostrar o QR Code</li>
+                <li>Tire uma foto ou faça screenshot do QR Code</li>
+                <li>Selecione a imagem usando o botão acima</li>
+                <li>O torneio será adicionado automaticamente!</li>
+              </ol>
+            </div>
+
+            <div id="qr-reader-file" className="hidden"></div>
+          </div>
+        </div>
+      )}
+
       {/* Enrollment Modal */}
       {showEnrollmentModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
@@ -2582,7 +2781,11 @@ function App() {
       )}
 
       {showCreateTournament && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" 
+          style={{ padding: '5mm' }}
+          onClick={() => setTournamentError('')}
+        >
           <div
             className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto overscroll-contain"
             onClick={(e) => e.stopPropagation()}
@@ -2597,6 +2800,22 @@ function App() {
                 ×
               </button>
             </div>
+
+            {/* Error Pop-up */}
+            {tournamentError && (
+              <div 
+                className="mb-4 bg-red-500 text-white px-4 py-3 rounded-xl shadow-lg flex items-center justify-between animate-pulse cursor-pointer"
+                onClick={() => setTournamentError('')}
+              >
+                <span className="font-semibold">{tournamentError}</span>
+                <button
+                  onClick={() => setTournamentError('')}
+                  className="ml-2 text-white hover:text-red-100 font-bold text-xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            )}
 
             <div className="space-y-3">
               <input
@@ -2703,16 +2922,25 @@ function App() {
       {/* Leagues Tab */}
       {activeTab === 'leagues' && (
         <div className="pb-20 max-w-2xl mx-auto relative z-10">
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-b-3xl shadow-lg">
+          <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white p-6 rounded-b-3xl shadow-lg">
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold">Liga</h1>
-              <button
-                onClick={() => setShowCreateTournament(true)}
-                className="w-18 h-18 rounded-full bg-white/30 border-2 border-white/40 flex flex-col items-center justify-center gap-1 p-2 hover:bg-white/35 active:scale-95 transition"
-              >
-                <Trophy className="w-7 h-7 text-white/60" />
-                <span className="text-xs font-bold text-white/60">Criar</span>
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleStartQRScanner}
+                  className="w-18 h-18 rounded-full bg-white/30 border-2 border-white/40 flex flex-col items-center justify-center gap-1 p-2 hover:bg-white/40 active:scale-95 transition"
+                >
+                  <QrCode className="w-7 h-7 text-white" />
+                  <span className="text-xs font-bold text-white">Ler QR</span>
+                </button>
+                <button
+                  onClick={() => setShowCreateTournament(true)}
+                  className="w-18 h-18 rounded-full bg-white/30 border-2 border-white/40 flex flex-col items-center justify-center gap-1 p-2 hover:bg-white/40 active:scale-95 transition"
+                >
+                  <Trophy className="w-7 h-7 text-white" />
+                  <span className="text-xs font-bold text-white">Criar</span>
+                </button>
+              </div>
             </div>
             <p className="text-white/90 text-base mt-2">Veja sua posição e acompanhe torneios.</p>
           </div>
@@ -2722,7 +2950,7 @@ function App() {
             <div className="rounded-2xl mb-4">
               <button
                 onClick={() => setShowRanking(!showRanking)}
-                className="w-full p-4 flex items-center justify-between text-left rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 border-2 border-white/30 shadow-md hover:from-orange-600 hover:to-orange-700 transition-colors"
+                className="w-full p-4 flex items-center justify-between text-left rounded-2xl bg-gradient-to-r from-orange-600 to-orange-700 border-2 border-white/30 shadow-md hover:from-orange-700 hover:to-orange-800 transition-colors"
               >
                 <h2 className="text-xl font-bold text-white">Ranking Global</h2>
                 <ChevronRight className={`w-6 h-6 text-white/90 transition-transform ${showRanking ? 'rotate-90' : ''}`} />
@@ -2911,7 +3139,17 @@ function App() {
                       </div>
                     </div>
 
-                    {championship.status === 'open' && (
+                    {championship.createdByUser && (
+                      <button 
+                        onClick={() => void handleGenerateQRCode(championship.id)}
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md mb-2 flex items-center justify-center gap-2"
+                      >
+                        <QrCode className="w-5 h-5" />
+                        Compartilhar QR Code
+                      </button>
+                    )}
+                    
+                    {championship.status === 'open' && !championship.createdByUser && (
                       enrolledChampionships.has(championship.id) ? (
                         <button className="w-full bg-gray-400 text-white py-3 rounded-xl font-semibold cursor-not-allowed" disabled>
                           ✓ Inscrito
