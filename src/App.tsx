@@ -17,7 +17,22 @@ const fishingQuotes = [
   "Você sabia? Peixes podem reconhecer rostos humanos.",
   "Dica: Os peixes mordem mais ao amanhecer e ao entardecer.",
   "Anedota: Por que o peixe não joga poker? Porque tem medo de anzóis!",
-  "Sabedoria: Dê um peixe a um homem e o alimentará por um dia. Ensine-o a pescar e o alimentará para sempre."
+  "Sabedoria: Dê um peixe a um homem e o alimentará por um dia. Ensine-o a pescar e o alimentará para sempre.",
+  "Curiosidade: O tucunaré pode saltar até 2 metros fora da água!",
+  "Você sabia? A traíra tem dentes afiados e pode morder até depois de capturada.",
+  "Dica: Lua cheia e lua nova são os melhores períodos para pescar.",
+  "Curiosidade: O dourado pode nadar a velocidades de até 60 km/h!",
+  "Você sabia? Alguns peixes podem viver mais de 100 anos.",
+  "Dica: Água turva após chuva é ideal para pescar traíras.",
+  "Curiosidade: O pirarucu é um dos maiores peixes de água doce do mundo.",
+  "Você sabia? Peixes sentem dor e têm memória de até 5 meses.",
+  "Dica: Use iscas naturais em águas claras e artificiais em águas turvas.",
+  "Curiosidade: O bagre usa seus 'bigodes' para sentir o ambiente.",
+  "Você sabia? A tilápia pode se reproduzir a cada 4 semanas.",
+  "Dica: Pescar contra o vento aumenta suas chances de sucesso.",
+  "Curiosidade: Alguns peixes mudam de sexo durante a vida!",
+  "Você sabia? O robalo pode viver tanto em água doce quanto salgada.",
+  "Dica: Mantenha sempre silêncio ao pescar - peixes sentem vibrações."
 ]
 
 interface Catch {
@@ -73,6 +88,8 @@ interface Championship {
   maxParticipants: number
   status: 'open' | 'closed' | 'ongoing'
   distanceKm?: number
+  createdByUser?: boolean
+  createdAt?: string
 }
 
 interface Sponsor {
@@ -688,12 +705,56 @@ function App() {
     { id: 3, name: 'Winter Fishing Challenge', location: 'Pesqueiro Maeda', date: '2026-04-10', prize: 'R$ 8,000', participants: 28, maxParticipants: 35, status: 'open', distanceKm: 22 },
     { id: 4, name: 'Taboão Lake Masters', location: 'Lago do Taboão', date: '2026-02-25', prize: 'R$ 3,000', participants: 25, maxParticipants: 25, status: 'ongoing', distanceKm: 5 }
   ])
+  
+  const [enrolledChampionships, setEnrolledChampionships] = useState<Set<number>>(new Set())
+  const [showEnrollmentModal, setShowEnrollmentModal] = useState(false)
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState<number | null>(null)
+  const [enrollmentForm, setEnrollmentForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    cpf: ''
+  })
 
   const sortedChampionshipsByDistance = useMemo(() => {
     return championships
       .slice()
-      .sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
+      .sort((a, b) => {
+        // Torneios criados pelo usuário vêm primeiro
+        if (a.createdByUser && !b.createdByUser) return -1
+        if (!a.createdByUser && b.createdByUser) return 1
+        
+        // Entre torneios do usuário, ordenar por data de criação (mais recentes primeiro)
+        if (a.createdByUser && b.createdByUser) {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return dateB - dateA
+        }
+        
+        // Torneios não criados pelo usuário ordenados por distância
+        return (a.distanceKm ?? 999) - (b.distanceKm ?? 999)
+      })
   }, [championships])
+
+  const handleEnrollChampionship = useCallback(() => {
+    if (!selectedChampionshipId) return
+    
+    if (!enrollmentForm.name || !enrollmentForm.email || !enrollmentForm.phone) {
+      alert('Preencha todos os campos obrigatórios.')
+      return
+    }
+    
+    setEnrolledChampionships(prev => new Set(prev).add(selectedChampionshipId))
+    setChampionships(prev => prev.map(c => 
+      c.id === selectedChampionshipId 
+        ? { ...c, participants: c.participants + 1 }
+        : c
+    ))
+    
+    setShowEnrollmentModal(false)
+    setSelectedChampionshipId(null)
+    setEnrollmentForm({ name: '', email: '', phone: '', cpf: '' })
+  }, [selectedChampionshipId, enrollmentForm])
 
   const handleCreateTournament = useCallback(() => {
     const name = newTournament.name.trim()
@@ -721,7 +782,9 @@ function App() {
       participants: 0,
       maxParticipants,
       status: 'open',
-      distanceKm
+      distanceKm,
+      createdByUser: true,
+      createdAt: new Date().toISOString()
     }
 
     setChampionships((prev) => [created, ...prev])
@@ -1272,11 +1335,12 @@ function App() {
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-gradient-to-b from-blue-900/80 via-blue-700/80 to-blue-500/80">
         {/* Background Image with Animation */}
         <div 
-          className="absolute inset-0 bg-cover bg-center ocean-wave"
+          className="absolute inset-0 bg-cover bg-center ocean-wave transition-all duration-1000"
           style={{ 
             backgroundImage: "url('/Fundo.jpg')",
             opacity: 0.8,
-            animation: 'wave 20s ease-in-out infinite'
+            animation: 'wave 20s ease-in-out infinite',
+            filter: showWaveTransition ? 'blur(10px)' : 'blur(0px)'
           }}
         />
 
@@ -2437,6 +2501,86 @@ function App() {
         </div>
       )}
 
+      {/* Enrollment Modal */}
+      {showEnrollmentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Inscrição no Torneio</h2>
+              <button
+                onClick={() => {
+                  setShowEnrollmentModal(false)
+                  setSelectedChampionshipId(null)
+                  setEnrollmentForm({ name: '', email: '', phone: '', cpf: '' })
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Nome Completo *</label>
+                <input
+                  type="text"
+                  value={enrollmentForm.name}
+                  onChange={(e) => setEnrollmentForm({ ...enrollmentForm, name: e.target.value })}
+                  placeholder="Seu nome completo"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">E-mail *</label>
+                <input
+                  type="email"
+                  value={enrollmentForm.email}
+                  onChange={(e) => setEnrollmentForm({ ...enrollmentForm, email: e.target.value })}
+                  placeholder="seu@email.com"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Telefone *</label>
+                <input
+                  type="tel"
+                  value={enrollmentForm.phone}
+                  onChange={(e) => setEnrollmentForm({ ...enrollmentForm, phone: e.target.value })}
+                  placeholder="(11) 99999-9999"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">CPF (opcional)</label>
+                <input
+                  type="text"
+                  value={enrollmentForm.cpf}
+                  onChange={(e) => setEnrollmentForm({ ...enrollmentForm, cpf: e.target.value })}
+                  placeholder="000.000.000-00"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Importante:</strong> Ao confirmar sua inscrição, você receberá um e-mail com mais detalhes sobre o torneio.
+                </p>
+              </div>
+
+              <button
+                onClick={handleEnrollChampionship}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md"
+              >
+                Confirmar Inscrição
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showCreateTournament && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
           <div
@@ -2768,9 +2912,21 @@ function App() {
                     </div>
 
                     {championship.status === 'open' && (
-                      <button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md">
-                        Inscrever-se Agora
-                      </button>
+                      enrolledChampionships.has(championship.id) ? (
+                        <button className="w-full bg-gray-400 text-white py-3 rounded-xl font-semibold cursor-not-allowed" disabled>
+                          ✓ Inscrito
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            setSelectedChampionshipId(championship.id)
+                            setShowEnrollmentModal(true)
+                          }}
+                          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md"
+                        >
+                          Inscrever-se Agora
+                        </button>
+                      )
                     )}
                     {championship.status === 'ongoing' && (
                       <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all shadow-md">
