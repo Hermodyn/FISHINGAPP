@@ -722,7 +722,6 @@ function App() {
   const [showQRCodeModal, setShowQRCodeModal] = useState(false)
   const [qrCodeDataURL, setQRCodeDataURL] = useState('')
   const [showQRScanner, setShowQRScanner] = useState(false)
-  const qrScannerRef = useRef<Html5Qrcode | null>(null)
 
   const sortedChampionshipsByDistance = useMemo(() => {
     return championships
@@ -800,18 +799,6 @@ function App() {
   const handleStartQRScanner = useCallback(() => {
     // Apenas abre o modal de upload, sem tentar acessar a câmera
     setShowQRScanner(true)
-  }, [])
-
-  const handleStopQRScanner = useCallback(async () => {
-    if (qrScannerRef.current) {
-      try {
-        await qrScannerRef.current.stop()
-        qrScannerRef.current = null
-      } catch (err) {
-        console.error('Erro ao parar scanner:', err)
-      }
-    }
-    setShowQRScanner(false)
   }, [])
 
   const handleQRImageUpload = useCallback(async (file: File) => {
