@@ -863,6 +863,7 @@ function App() {
     }
     
     setIdentifyLoading(false)
+    setShowAddCatch(true)
   }, [])
 
   const ensureAutoLocation = useCallback(async () => {
@@ -1343,6 +1344,21 @@ function App() {
 
   return (
     <div className="min-h-screen pb-24 relative" style={{ background: "linear-gradient(180deg, hsl(200 60% 85%) 0%, hsl(175 50% 70%) 100%)" }}>
+      {/* Hidden input for photo capture - always available */}
+      <input
+        ref={catchPhotoInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (!file) return
+          void identifyFishFromFile(file)
+          e.target.value = ''
+        }}
+      />
+
       {/* Background Image - Fixed and Solid (hidden on spots, home, leagues, community tabs) */}
       {!['spots', 'home', 'leagues', 'community'].includes(activeTab) && (
         <div 
@@ -1481,11 +1497,13 @@ function App() {
           {/* Main Action Buttons - Large Square Buttons */}
           <div className="grid grid-cols-3 gap-3 mb-4">
             <button
-              onClick={() => setShowAddCatch(true)}
+              onClick={() => {
+                catchPhotoInputRef.current?.click()
+              }}
               className="aspect-square bg-white/60 backdrop-blur-md rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border border-white/50"
             >
               <Plus className="w-10 h-10 text-blue-600" strokeWidth={2.5} />
-              <span className="text-xs font-bold text-gray-800">Register</span>
+              <span className="text-xs font-bold text-gray-800">Registrar</span>
             </button>
 
             <button
@@ -1493,7 +1511,7 @@ function App() {
               className="aspect-square bg-white/60 backdrop-blur-md rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border border-white/50"
             >
               <Fish className="w-10 h-10 text-blue-600" strokeWidth={2} />
-              <span className="text-xs font-bold text-gray-800">Catches</span>
+              <span className="text-xs font-bold text-gray-800">Capturas</span>
             </button>
 
             <button
@@ -1866,20 +1884,6 @@ function App() {
               </button>
             </div>
           </div>
-
-          <input
-            ref={catchPhotoInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (!file) return
-              void identifyFishFromFile(file)
-              e.target.value = ''
-            }}
-          />
 
           <div className="p-4 space-y-3">
 
@@ -3973,6 +3977,19 @@ function App() {
         </div>
       )}
 
+      {/* Loading indicator while AI is processing */}
+      {identifyLoading && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-sm mx-4 text-center">
+            <div className="mb-4">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Identificando peixe...</h3>
+            <p className="text-sm text-gray-600">Aguarde enquanto a IA analisa a imagem</p>
+          </div>
+        </div>
+      )}
+
       {showAddCatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{ padding: '5mm' }}>
           <div className="bg-white rounded-2xl max-w-sm w-full p-5 max-h-[90vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -4008,20 +4025,6 @@ function App() {
                 <Scan className="w-5 h-5" />
                 {identifyLoading ? 'Identificando...' : 'IA Scan - Identificar Peixe'}
               </button>
-              
-              <input
-                ref={catchPhotoInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) {
-                    identifyFishFromFile(file)
-                  }
-                }}
-                className="hidden"
-              />
 
               <div className="relative">
                 <input
