@@ -818,21 +818,19 @@ function App() {
   const [showFishIdentified, setShowFishIdentified] = useState(false)
   const [identifiedSpecies, setIdentifiedSpecies] = useState('')
   const [identifyLoading, setIdentifyLoading] = useState(false)
-  const [locationLoading, setLocationLoading] = useState(false)
-  const [photoCapturedAt, setPhotoCapturedAt] = useState<number | null>(null)
+  // const [locationLoading, setLocationLoading] = useState(false)
+  // const [photoCapturedAt, setPhotoCapturedAt] = useState<number | null>(null)
   const [showSpeciesDropdown, setShowSpeciesDropdown] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [aiIdentified, setAiIdentified] = useState(false)
 
   const identifyFishFromFile = useCallback(async (file: File) => {
-    const now = Date.now()
     setIdentifyLoading(true)
     setRegisterError(null)
     setShowAIScanner(false)
 
     const url = URL.createObjectURL(file)
     setNewCatch((prev) => ({ ...prev, photoUrl: url }))
-    setPhotoCapturedAt(now)
 
     await new Promise((r) => setTimeout(r, 1500))
     
@@ -873,7 +871,7 @@ function App() {
       return
     }
 
-    setLocationLoading(true)
+    // setLocationLoading(true)
     setRegisterError(null)
 
     try {
@@ -898,7 +896,7 @@ function App() {
         setRegisterError('Não foi possível obter sua localização. O registro só pode ser feito em tempo real.')
       }
     } finally {
-      setLocationLoading(false)
+      // setLocationLoading(false)
     }
   }, [])
 
@@ -935,7 +933,7 @@ function App() {
 
       setCatches([catchData, ...catches])
       setNewCatch({ species: '', weight: '', length: '', location: '', baitUsed: '', photoUrl: '' })
-      setPhotoCapturedAt(null)
+      // setPhotoCapturedAt(null)
       setShowAddCatch(false)
       setActiveTab('home')
     } catch (e) {
@@ -961,7 +959,7 @@ function App() {
       setIdentifiedSpecies('')
       setShowFishIdentified(false)
       if (!newCatch.photoUrl) {
-        setPhotoCapturedAt(null)
+        // setPhotoCapturedAt(null)
       }
       ensureAutoLocation()
     }
